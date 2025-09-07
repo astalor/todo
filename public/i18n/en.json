@@ -1,5 +1,23 @@
 {
-  "auth": { "login": "Login", "register": "Register", "logout": "Logout" },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "loginTitle": "Login",
+    "registerTitle": "Create account",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "haveAccount": "I have an account",
+    "noAccount": "Create account",
+    "err": {
+      "required": "This field is required",
+      "email": "Enter a valid email",
+      "min": "Minimum {{n}} characters",
+      "mismatch": "Passwords do not match"
+    }
+  },
   "common": {
     "status": "Status",
     "priority": "Priority",
@@ -16,22 +34,6 @@
     "any": "Any",
     "cancel": "Cancel",
     "close": "Close"
-  },
-  "dashboard": {
-    "h1": "Dashboard",
-    "refresh": "Refresh",
-    "total": "Total",
-    "overdue": "Overdue",
-    "dueToday": "Due Today",
-    "next7": "Next 7 Days",
-    "completion": "Completion",
-    "status": "Status",
-    "priority": "Priority",
-    "categories": "Categories",
-    "topTags": "Top Tags",
-    "noCategories": "No categories yet",
-    "noTags": "No tags yet",
-    "tasks": "tasks"
   },
   "status": { "todo": "To Do", "inProgress": "In Progress", "done": "Done" },
   "priority": { "low": "Low", "medium": "Medium", "high": "High" },
@@ -54,5 +56,21 @@
     "addTag": "Add Tag",
     "create": "Create",
     "save": "Save"
+  },
+  "dashboard": {
+    "h1": "Dashboard",
+    "refresh": "Refresh",
+    "total": "Total",
+    "overdue": "Overdue",
+    "dueToday": "Due Today",
+    "next7": "Next 7 Days",
+    "completion": "Completion",
+    "status": "Status",
+    "priority": "Priority",
+    "categories": "Categories",
+    "topTags": "Top Tags",
+    "noCategories": "No categories yet",
+    "noTags": "No tags yet",
+    "tasks": "tasks"
   }
 }

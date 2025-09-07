@@ -1,5 +1,23 @@
 {
-  "auth": { "login": "Вход", "register": "Регистрация", "logout": "Изход" },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация",
+    "logout": "Изход",
+    "loginTitle": "Вход",
+    "registerTitle": "Създаване на профил",
+    "name": "Име",
+    "email": "Имейл",
+    "password": "Парола",
+    "confirmPassword": "Потвърди парола",
+    "haveAccount": "Имам профил",
+    "noAccount": "Създай профил",
+    "err": {
+      "required": "Полето е задължително",
+      "email": "Въведете валиден имейл",
+      "min": "Минимум {{n}} символа",
+      "mismatch": "Паролите не съвпадат"
+    }
+  },
   "common": {
     "status": "Статус",
     "priority": "Приоритет",
@@ -16,22 +34,6 @@
     "any": "Всички",
     "cancel": "Отказ",
     "close": "Затвори"
-  },
-  "dashboard": {
-    "h1": "Табло",
-    "refresh": "Опресни",
-    "total": "Общо",
-    "overdue": "Просрочени",
-    "dueToday": "Днес",
-    "next7": "Следващи 7 дни",
-    "completion": "Завършеност",
-    "status": "Статус",
-    "priority": "Приоритет",
-    "categories": "Категории",
-    "topTags": "Топ етикети",
-    "noCategories": "Няма категории",
-    "noTags": "Няма етикети",
-    "tasks": "задачи"
   },
   "status": { "todo": "За правене", "inProgress": "В процес", "done": "Готово" },
   "priority": { "low": "Нисък", "medium": "Среден", "high": "Висок" },
@@ -54,5 +56,21 @@
     "addTag": "Добави етикет",
     "create": "Създай",
     "save": "Запази"
+  },
+  "dashboard": {
+    "h1": "Табло",
+    "refresh": "Опресни",
+    "total": "Общо",
+    "overdue": "Просрочени",
+    "dueToday": "Днес",
+    "next7": "Следващи 7 дни",
+    "completion": "Завършеност",
+    "status": "Статус",
+    "priority": "Приоритет",
+    "categories": "Категории",
+    "topTags": "Топ етикети",
+    "noCategories": "Няма категории",
+    "noTags": "Няма етикети",
+    "tasks": "задачи"
   }
 }
