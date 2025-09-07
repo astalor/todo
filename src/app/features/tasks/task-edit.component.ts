@@ -60,12 +60,15 @@ import { MatNativeDateModule } from '@angular/material/core';
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Categories</mat-label>
-            <mat-select formControlName="categories" multiple>
-              <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
-            </mat-select>
-          </mat-form-field>
+          <div class="cats-field">
+            <mat-form-field appearance="outline" class="cats-ff">
+              <mat-label>Categories</mat-label>
+              <mat-select formControlName="categories" multiple>
+                <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <button *ngIf="isCreate" mat-stroked-button type="button" (click)="addCategoryQuick()">Add Category</button>
+          </div>
 
           <div class="due-wrap">
             <mat-form-field appearance="outline">
@@ -82,25 +85,28 @@ import { MatNativeDateModule } from '@angular/material/core';
           </div>
         </div>
 
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>Tags</mat-label>
-          <mat-chip-set>
-            <mat-chip *ngFor="let tag of tagsCtrl()" (removed)="removeTag(tag)">
-              {{ tag }}
-              <button matChipRemove mat-icon-button aria-label="remove">
-                <mat-icon>close</mat-icon>
-              </button>
-            </mat-chip>
-          </mat-chip-set>
-          <input matInput placeholder="Add tag"
-                 #tagTrigger="matAutocompleteTrigger"
-                 [matAutocomplete]="auto"
-                 (focus)="tagTrigger.openPanel()"
-                 (keydown.enter)="addTag($any($event.target).value); $any($event.target).value=''">
-          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addTag($event.option.value)" [autoActiveFirstOption]="true">
-            <mat-option *ngFor="let t of tagsOptions" [value]="t">{{ t }}</mat-option>
-          </mat-autocomplete>
-        </mat-form-field>
+        <div class="tags-field">
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Tags</mat-label>
+            <mat-chip-set>
+              <mat-chip *ngFor="let tag of tagsCtrl()" (removed)="removeTag(tag)">
+                {{ tag }}
+                <button matChipRemove mat-icon-button aria-label="remove">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </mat-chip>
+            </mat-chip-set>
+            <input matInput placeholder="Add tag"
+                   #tagTrigger="matAutocompleteTrigger"
+                   [matAutocomplete]="auto"
+                   (focus)="tagTrigger.openPanel()"
+                   (keydown.enter)="addTag($any($event.target).value); $any($event.target).value=''">
+            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addTag($event.option.value)" [autoActiveFirstOption]="true">
+              <mat-option *ngFor="let t of tagsOptions" [value]="t">{{ t }}</mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+          <button *ngIf="isCreate" mat-stroked-button type="button" (click)="addTagQuick()">Add Tag</button>
+        </div>
 
         <div class="actions">
           <button mat-raised-button color="primary">{{ isCreate ? 'Create' : 'Save' }}</button>
@@ -112,8 +118,11 @@ import { MatNativeDateModule } from '@angular/material/core';
   styles: [`
     .wrap { max-width: 840px; margin: 16px auto; padding: 0 16px; }
     .full { width: 100%; }
-    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: start; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-items: start; }
+    .cats-field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .cats-ff { width: 100%; }
     .due-wrap { display: grid; grid-template-columns: 1fr 160px; gap: 10px; }
+    .tags-field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
     .actions { display: flex; gap: 8px; margin-top: 12px; }
   `]
 })
@@ -200,6 +209,24 @@ export class TaskEditComponent implements OnInit {
   removeTag(tag: string) {
     const next = (this.tagsCtrl() || []).filter(x => x !== tag);
     this.form.patchValue({ tags: next });
+  }
+
+  addCategoryQuick() {
+    const v = (window.prompt('New category name?') || '').trim();
+    if (!v) return;
+    if (!this.categories.includes(v)) this.categories = [...this.categories, v];
+    const cur = new Set(this.form.get('categories')!.value as string[]);
+    cur.add(v);
+    this.form.patchValue({ categories: Array.from(cur) });
+  }
+
+  addTagQuick() {
+    const v = (window.prompt('New tag?') || '').trim();
+    if (!v) return;
+    if (!this.tagsOptions.includes(v)) this.tagsOptions = [...this.tagsOptions, v];
+    const cur = new Set(this.tagsCtrl() || []);
+    cur.add(v);
+    this.form.patchValue({ tags: Array.from(cur) });
   }
 
   toTime(d: Date) {

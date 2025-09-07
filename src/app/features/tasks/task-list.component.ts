@@ -76,15 +76,31 @@ import { Subscription } from 'rxjs';
           <input matInput formControlName="q">
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>From</mat-label>
-          <input matInput type="datetime-local" formControlName="dueFrom">
-        </mat-form-field>
+        <div class="range">
+          <mat-form-field appearance="outline">
+            <mat-label>From date</mat-label>
+            <input matInput [matDatepicker]="fromPicker" formControlName="dueFromDate">
+            <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+            <mat-datepicker #fromPicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="time-ff">
+            <mat-label>Time</mat-label>
+            <input matInput type="time" formControlName="dueFromTime">
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline">
-          <mat-label>To</mat-label>
-          <input matInput type="datetime-local" formControlName="dueTo">
-        </mat-form-field>
+        <div class="range">
+          <mat-form-field appearance="outline">
+            <mat-label>To date</mat-label>
+            <input matInput [matDatepicker]="toPicker" formControlName="dueToDate">
+            <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+            <mat-datepicker #toPicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="time-ff">
+            <mat-label>Time</mat-label>
+            <input matInput type="time" formControlName="dueToTime">
+          </mat-form-field>
+        </div>
 
         <button mat-raised-button color="primary">Apply</button>
         <button mat-stroked-button type="button" (click)="reset()">Reset</button>
@@ -97,18 +113,20 @@ import { Subscription } from 'rxjs';
         <button mat-stroked-button (click)="next()" [disabled]="disableNext()">Next</button>
       </div>
 
-      <div class="list" *ngIf="items$ | async as items">
-        <div class="row" *ngFor="let t of items; trackBy: track">
-          <div class="row-top">
+      <div class="cards" *ngIf="items$ | async as items">
+        <div class="card" *ngFor="let t of items; trackBy: track" [class.overdue]="isOverdue(t)">
+          <div class="card-head">
             <a class="title" [routerLink]="['/tasks', t.id]">{{ t.title }}</a>
-            <div class="row-actions">
-              <button mat-stroked-button color="primary" [routerLink]="['/tasks', t.id]">Edit</button>
+            <div class="badges">
+              <span class="pill p-{{t.priority}}">{{ t.priority }}</span>
+              <span class="pill s-{{t.status}}">{{ t.status }}</span>
+              <span class="pill due" *ngIf="t.dueDate">{{ dueHuman(t.dueDate) }}</span>
             </div>
           </div>
 
           <div class="desc" *ngIf="t.description">{{ t.description }}</div>
 
-          <div class="inline-grid">
+          <div class="grid">
             <mat-form-field appearance="outline">
               <mat-label>Status</mat-label>
               <mat-select [value]="t.status" (valueChange)="update(t, { status: $event })">
@@ -146,9 +164,13 @@ import { Subscription } from 'rxjs';
             </mat-form-field>
           </div>
 
-          <div class="meta">
-            <span class="pill">{{ t.priority }}</span>
-            <span class="pill" *ngFor="let c of (t.categories || (t.category ? [t.category] : []))">{{ c }}</span>
+          <div class="foot">
+            <div class="cats">
+              <span class="chip" *ngFor="let c of (t.categories || (t.category ? [t.category] : []))">{{ c }}</span>
+            </div>
+            <div class="actions">
+              <button mat-stroked-button color="primary" [routerLink]="['/tasks', t.id]">Edit</button>
+            </div>
           </div>
         </div>
       </div>
@@ -157,30 +179,47 @@ import { Subscription } from 'rxjs';
     </div>
   `,
   styles: [`
-    .wrap { max-width: 1100px; margin: 16px auto; padding: 0 16px; display: grid; gap: 12px; }
+    .wrap { max-width: 1200px; margin: 16px auto; padding: 0 16px; display: grid; gap: 14px; }
     .filters-header { display: flex; align-items: center; gap: 10px; }
     .filters-toggle { display: inline-flex; align-items: center; gap: 6px; }
-    .filters { display: grid; grid-template-columns: 180px 160px 240px minmax(420px,1fr) 220px 220px auto auto; gap: 10px; align-items: center; }
+    .filters { display: grid; grid-template-columns: 180px 160px 240px minmax(420px,1fr) repeat(2, minmax(240px, 1fr)) auto auto; gap: 10px; align-items: end; }
     .filters-collapsible.collapsed { display: none; }
+    .range { display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: center; }
+    .time-ff { min-width: 130px; }
     .search-ff { width: 100%; }
     .spacer { flex: 1; }
     .toolbar { display: flex; align-items: center; gap: 8px; }
     .page { min-width: 90px; text-align: center; }
-    .list { display: grid; gap: 12px; }
-    .row { padding: 12px; border-radius: 10px; background: #fff; border: 1px solid #eee; display: grid; gap: 10px; }
-    .row-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .title { font-weight: 700; text-decoration: none; color: inherit; }
-    .row-actions { display: flex; gap: 8px; }
+    .cards { display: grid; gap: 12px; }
+    .card { background: #fff; border: 1px solid #ececec; border-radius: 14px; padding: 12px; display: grid; gap: 10px; }
+    .card.overdue { border-color: #ffcdd2; }
+    .card-head { display: flex; gap: 12px; align-items: start; justify-content: space-between; }
+    .title { font-weight: 700; text-decoration: none; color: inherit; word-break: break-word; }
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #f2f2f2; text-transform: capitalize; }
+    .pill.p-low { background: #e8f5e9; }
+    .pill.p-medium { background: #fff8e1; }
+    .pill.p-high { background: #ffebee; }
+    .pill.s-todo { background: #e3f2fd; }
+    .pill.s-in-progress { background: #ede7f6; }
+    .pill.s-done { background: #e8eaf6; }
+    .pill.due { background: #e0f2f1; }
     .desc { color: #555; font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .inline-grid { display: grid; grid-template-columns: 200px 260px 1fr 260px; gap: 10px; align-items: start; }
-    .due-wrap { display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: center; }
-    .due-date { width: 100%; }
-    .due-time { min-width: 130px; }
-    .meta { display: flex; gap: 6px; flex-wrap: wrap; }
-    .pill { padding: 2px 8px; border-radius: 999px; background: #f2f2f2; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: 220px 260px 1fr 260px; gap: 10px; align-items: start; }
+    .due-wrap { display: grid; grid-template-columns: 1fr 150px; gap: 10px; }
+    .foot { display: flex; justify-content: space-between; align-items: center; }
+    .cats { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { background: #f7f7f7; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+    .actions { display: flex; gap: 8px; }
     .loading { padding: 8px 0; color: #777; }
     @media (min-width: 960px) { .filters-collapsible { display: grid !important; } .filters-toggle { display: none; } }
-    @media (max-width: 960px) { .filters { grid-template-columns: 1fr 1fr; } .inline-grid { grid-template-columns: 1fr; } .due-wrap { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 960px) {
+      .filters { grid-template-columns: 1fr 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .card-head { flex-direction: column; align-items: stretch; }
+      .badges { margin-top: 4px; }
+      .foot { flex-direction: column; align-items: stretch; gap: 8px; }
+    }
   `]
 })
 export class TaskListComponent implements OnInit, OnDestroy {
@@ -203,7 +242,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
   page = signal(1);
   pageSize = signal(20);
   filtersOpen = false;
-
   dueDraft: Record<string, { date?: Date | null; time?: string | null }> = {};
 
   form = this.fb.group({
@@ -211,35 +249,42 @@ export class TaskListComponent implements OnInit, OnDestroy {
     priority: [''],
     categories: [[] as string[]],
     q: [''],
-    dueFrom: [''],
-    dueTo: ['']
+    dueFromDate: [null as Date | null],
+    dueFromTime: [''],
+    dueToDate: [null as Date | null],
+    dueToTime: ['']
   });
 
   ngOnInit() {
     this.sub = this.route.queryParams.subscribe(p => {
       const catsCsv = p['category'] || '';
       const catsArr = catsCsv ? String(catsCsv).split(',').map((x: string) => x.trim()).filter(Boolean) : [];
-      const qp = {
+      const dueFromIso = p['dueFrom'] || '';
+      const dueToIso = p['dueTo'] || '';
+      const fromD = dueFromIso ? new Date(String(dueFromIso)) : null;
+      const toD = dueToIso ? new Date(String(dueToIso)) : null;
+      this.form.patchValue({
         status: p['status'] || '',
         priority: p['priority'] || '',
         categories: catsArr,
         q: p['q'] || '',
-        dueFrom: p['dueFrom'] || '',
-        dueTo: p['dueTo'] || '',
-        excludeDone: p['excludeDone'] === 'true' ? true : false,
+        dueFromDate: fromD,
+        dueFromTime: fromD ? this.toTime(dueFromIso) : '',
+        dueToDate: toD,
+        dueToTime: toD ? this.toTime(dueToIso) : ''
+      }, { emitEvent: false });
+      const queryForApi: any = {
+        status: p['status'] || '',
+        priority: p['priority'] || '',
+        category: catsArr.join(','),
+        q: p['q'] || '',
+        dueFrom: dueFromIso || '',
+        dueTo: dueToIso || '',
+        excludeDone: p['excludeDone'] || '',
         page: Number(p['page'] || 1),
         pageSize: Number(p['pageSize'] || 20)
       };
-      this.form.patchValue({
-        status: qp.status,
-        priority: qp.priority,
-        categories: qp.categories,
-        q: qp.q,
-        dueFrom: qp.dueFrom ? this.toLocalInput(qp.dueFrom) : '',
-        dueTo: qp.dueTo ? this.toLocalInput(qp.dueTo) : ''
-      }, { emitEvent: false });
-      const queryForApi: any = { ...qp, category: qp.categories.join(',') };
-      delete queryForApi.categories;
+      Object.keys(queryForApi).forEach(k => (queryForApi[k] === '' || queryForApi[k] == null) && delete queryForApi[k]);
       this.store.dispatch(TasksActions.loadList({ query: queryForApi }));
       this.store.dispatch(TasksActions.loadCategories());
       this.store.dispatch(TasksActions.loadTags());
@@ -260,8 +305,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
       priority: v.priority || '',
       category: (v.categories || []).join(','),
       q: v.q || '',
-      dueFrom: v.dueFrom ? new Date(v.dueFrom).toISOString() : '',
-      dueTo: v.dueTo ? new Date(v.dueTo).toISOString() : '',
+      dueFrom: this.combine(v.dueFromDate || null, v.dueFromTime || ''),
+      dueTo: this.combine(v.dueToDate || null, v.dueToTime || ''),
       page: 1,
       pageSize: this.pageSize()
     };
@@ -270,7 +315,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
   }
 
   reset() {
-    this.form.reset({ status: '', priority: '', categories: [], q: '', dueFrom: '', dueTo: '' });
+    this.form.reset({ status: '', priority: '', categories: [], q: '', dueFromDate: null, dueFromTime: '', dueToDate: null, dueToTime: '' });
     this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, pageSize: this.pageSize() } });
   }
 
@@ -294,18 +339,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return Math.max(1, Math.ceil(t / ps));
   }
 
-  toLocalInput(iso: string | null) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const y = d.getFullYear();
-    const m = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const mm = pad(d.getMinutes());
-    return `${y}-${m}-${dd}T${hh}:${mm}`;
-  }
-
   toDateObj(iso: string | null) {
     return iso ? new Date(iso) : null;
   }
@@ -317,10 +350,18 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  combine(date: Date | null, time: string | null) {
+    if (!date && !time) return '';
+    const base = date ? new Date(date) : new Date();
+    const [hh, mm] = (time || '00:00').split(':').map(x => parseInt(x, 10));
+    base.setHours(Number.isFinite(hh) ? hh : 0, Number.isFinite(mm) ? mm : 0, 0, 0);
+    return base.toISOString();
+  }
+
   onDueDateChange(t: any, e: any) {
     const date = e.value as Date | null;
     this.setDueDraft(t.id, { date });
-    const iso = this.combineToIso(t.id, t.dueDate);
+    const iso = this.combineDraft(t.id, t.dueDate);
     this.update(t, { dueDate: iso });
   }
 
@@ -328,7 +369,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     const input = evt.target as HTMLInputElement | null;
     const time = input?.value || null;
     this.setDueDraft(t.id, { time });
-    const iso = this.combineToIso(t.id, t.dueDate);
+    const iso = this.combineDraft(t.id, t.dueDate);
     this.update(t, { dueDate: iso });
   }
 
@@ -337,7 +378,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     this.dueDraft[id] = { ...cur, ...part };
   }
 
-  combineToIso(id: string, fallbackIso: string | null) {
+  combineDraft(id: string, fallbackIso: string | null) {
     const draft = this.dueDraft[id] || {};
     const base = draft.date ?? (fallbackIso ? new Date(fallbackIso) : new Date());
     const timeStr = draft.time ?? this.toTime(fallbackIso);
@@ -361,5 +402,25 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   create() {
     this.router.navigateByUrl('/tasks/new');
+  }
+
+  isOverdue(t: any) {
+    if (!t.dueDate) return false;
+    const d = new Date(t.dueDate).getTime();
+    const start = new Date().setHours(0,0,0,0);
+    return d < start && t.status !== 'done';
+  }
+
+  dueHuman(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = Math.floor((d.getTime() - now.getTime()) / 86400000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    if (diff === 0) return `Today ${hh}:${mm}`;
+    if (diff === 1) return `Tomorrow ${hh}:${mm}`;
+    if (diff === -1) return `Yesterday ${hh}:${mm}`;
+    return `${d.toLocaleDateString()} ${hh}:${mm}`;
   }
 }
