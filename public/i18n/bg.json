@@ -34,7 +34,8 @@
     "loading": "Зареждане…",
     "any": "Всички",
     "cancel": "Отказ",
-    "close": "Затвори"
+    "close": "Затвори",
+    "delete": "Изтрии"
   },
   "status": { "todo": "За правене", "inProgress": "В процес", "done": "Готово" },
   "priority": { "low": "Нисък", "medium": "Среден", "high": "Висок" },

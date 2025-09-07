@@ -1,6 +1,7 @@
 # TaskManager
-
 A task manager built with **Angular + NgRx** and a small **Node/Express + SQLite** API.
+
+[![Watch the video](https://img.youtube.com/vi/cnr-Sho_l_Y/hqdefault.jpg)](https://youtu.be/cnr-Sho_l_Y)
 
 ---
 

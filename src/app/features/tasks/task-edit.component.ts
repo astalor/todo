@@ -109,6 +109,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
         <div class="actions">
           <button mat-flat-button color="primary" [disabled]="form.invalid">{{ isNew() ? ('edit.create' | translate) : ('edit.save' | translate) }}</button>
+          <button *ngIf="!isNew()" mat-stroked-button color="warn" type="button" (click)="del()">{{ 'common.delete' | translate }}</button>
           <a mat-stroked-button routerLink="/tasks">{{ 'common.cancel' | translate }}</a>
         </div>
       </form>
@@ -224,6 +225,16 @@ export class TaskEditComponent implements OnInit {
         this.router.navigateByUrl('/tasks');
       });
     }
+  }
+
+  del() {
+    if (this.isNew() || !this.id()) return;
+    const ok = window.confirm('Delete this task?');
+    if (!ok) return;
+    this.api.delete(this.id() as string).subscribe(() => {
+      this.store.dispatch(TasksActions.loadList({ query: {} }));
+      this.router.navigateByUrl('/tasks');
+    });
   }
 
   promptAddCategory() {

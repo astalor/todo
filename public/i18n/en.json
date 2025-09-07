@@ -34,7 +34,8 @@
     "loading": "Loading…",
     "any": "Any",
     "cancel": "Cancel",
-    "close": "Close"
+    "close": "Close",
+    "delete": "Delete"
   },
   "status": { "todo": "To Do", "inProgress": "In Progress", "done": "Done" },
   "priority": { "low": "Low", "medium": "Medium", "high": "High" },
