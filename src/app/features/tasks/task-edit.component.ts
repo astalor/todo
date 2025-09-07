@@ -1,18 +1,18 @@
 // src/app/features/tasks/task-edit.component.ts
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { TasksService, Task } from '../../services/tasks.service';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { TasksService, Task } from '../../services/tasks.service';
+import { TasksActions } from '../../store/tasks/tasks.actions';
+import { selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.selectors';
 
 @Component({
   standalone: true,
@@ -20,13 +20,11 @@ import { MatNativeDateModule } from '@angular/material/core';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatButtonModule,
-    MatChipsModule,
-    MatIconModule,
-    MatAutocompleteModule,
+    MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule
   ],
@@ -34,17 +32,19 @@ import { MatNativeDateModule } from '@angular/material/core';
     <div class="wrap">
       <form [formGroup]="form" (ngSubmit)="save()">
         <mat-form-field appearance="outline" class="full">
-          <input matInput placeholder="Title" formControlName="title">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title">
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full">
-          <textarea matInput placeholder="Description" formControlName="description" rows="4"></textarea>
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="6" formControlName="description"></textarea>
         </mat-form-field>
 
-        <div class="row">
+        <div class="row meta">
           <mat-form-field appearance="outline">
             <mat-label>Status</mat-label>
-            <mat-select formControlName="status">
+            <mat-select formControlName="status" required>
               <mat-option value="todo">To Do</mat-option>
               <mat-option value="in-progress">In Progress</mat-option>
               <mat-option value="done">Done</mat-option>
@@ -53,89 +53,97 @@ import { MatNativeDateModule } from '@angular/material/core';
 
           <mat-form-field appearance="outline">
             <mat-label>Priority</mat-label>
-            <mat-select formControlName="priority">
+            <mat-select formControlName="priority" required>
               <mat-option value="low">Low</mat-option>
               <mat-option value="medium">Medium</mat-option>
               <mat-option value="high">High</mat-option>
             </mat-select>
           </mat-form-field>
 
-          <div class="cats-field">
-            <mat-form-field appearance="outline" class="cats-ff">
-              <mat-label>Categories</mat-label>
-              <mat-select formControlName="categories" multiple>
-                <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <button *ngIf="isCreate" mat-stroked-button type="button" (click)="addCategoryQuick()">Add Category</button>
-          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Due date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="dueDateDate">
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
 
-          <div class="due-wrap">
-            <mat-form-field appearance="outline">
-              <mat-label>Due date</mat-label>
-              <input matInput [matDatepicker]="picker" formControlName="dueDateDate">
-              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Time</mat-label>
-              <input matInput type="time" formControlName="dueDateTime">
-            </mat-form-field>
-          </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Time</mat-label>
+            <input matInput type="time" formControlName="dueDateTime">
+          </mat-form-field>
         </div>
 
-        <div class="tags-field">
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>Tags</mat-label>
-            <mat-chip-set>
-              <mat-chip *ngFor="let tag of tagsCtrl()" (removed)="removeTag(tag)">
-                {{ tag }}
-                <button matChipRemove mat-icon-button aria-label="remove">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </mat-chip>
-            </mat-chip-set>
-            <input matInput placeholder="Add tag"
-                   #tagTrigger="matAutocompleteTrigger"
-                   [matAutocomplete]="auto"
-                   (focus)="tagTrigger.openPanel()"
-                   (keydown.enter)="addTag($any($event.target).value); $any($event.target).value=''">
-            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addTag($event.option.value)" [autoActiveFirstOption]="true">
-              <mat-option *ngFor="let t of tagsOptions" [value]="t">{{ t }}</mat-option>
-            </mat-autocomplete>
+        <div class="line">
+          <mat-form-field appearance="outline" class="flex">
+            <mat-label>Categories</mat-label>
+            <mat-select formControlName="categories" multiple>
+              <mat-select-trigger>
+                <ng-container *ngIf="form.value.categories?.length as c">
+                  <span class="chip" *ngFor="let cat of form.value.categories | slice:0:3">{{ cat }}</span>
+                  <span class="more" *ngIf="c>3">+{{ c-3 }}</span>
+                </ng-container>
+              </mat-select-trigger>
+              <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
+            </mat-select>
           </mat-form-field>
-          <button *ngIf="isCreate" mat-stroked-button type="button" (click)="addTagQuick()">Add Tag</button>
+          <button class="add-btn" mat-stroked-button type="button" (click)="promptAddCategory()">Add Category</button>
+        </div>
+
+        <div class="line">
+          <mat-form-field appearance="outline" class="flex">
+            <mat-label>Tags</mat-label>
+            <mat-select formControlName="tags" multiple>
+              <mat-select-trigger>
+                <ng-container *ngIf="form.value.tags?.length as c">
+                  <span class="chip" *ngFor="let tag of form.value.tags | slice:0:3">{{ tag }}</span>
+                  <span class="more" *ngIf="c>3">+{{ c-3 }}</span>
+                </ng-container>
+              </mat-select-trigger>
+              <mat-option *ngFor="let t of tags" [value]="t">{{ t }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <button class="add-btn" mat-stroked-button type="button" (click)="promptAddTag()">Add Tag</button>
         </div>
 
         <div class="actions">
-          <button mat-raised-button color="primary">{{ isCreate ? 'Create' : 'Save' }}</button>
-          <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+          <button mat-flat-button color="primary" [disabled]="form.invalid">{{ isNew() ? 'Create' : 'Save' }}</button>
+          <a mat-stroked-button routerLink="/tasks">Cancel</a>
         </div>
       </form>
     </div>
   `,
   styles: [`
-    .wrap { max-width: 840px; margin: 16px auto; padding: 0 16px; }
-    .full { width: 100%; }
-    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; align-items: start; }
-    .cats-field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-    .cats-ff { width: 100%; }
-    .due-wrap { display: grid; grid-template-columns: 1fr 160px; gap: 10px; }
-    .tags-field { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .wrap { max-width: 1000px; margin: 16px auto; padding: 0 16px; }
+    form { display: grid; gap: 12px; }
+    .full { grid-column: 1 / -1; }
+    .row { display: grid; gap: 12px; align-items: end; }
+    .row.meta { grid-template-columns: repeat(4, minmax(180px, 1fr)); }
+    .line { display: grid; grid-template-columns: 1fr max-content; gap: 12px; align-items: center; }
+    .flex { width: 100%; }
+    .add-btn { height: 56px; }
+    .chip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #f2f2f2; margin-right: 6px; }
+    .more { font-size: 12px; color: #666; }
+    .actions { display: flex; gap: 10px; }
+    @media (max-width: 900px) {
+      .row.meta { grid-template-columns: 1fr 1fr; }
+      .line { grid-template-columns: 1fr; }
+      .add-btn { height: 40px; justify-self: start; }
+    }
+    @media (max-width: 600px) {
+      .row.meta { grid-template-columns: 1fr; }
+    }
   `]
 })
 export class TaskEditComponent implements OnInit {
+  private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private store = inject(Store);
   private api = inject(TasksService);
-  private fb = inject(FormBuilder);
-  id: string | null = null;
-  isCreate = true;
 
+  id = signal<string | null>(null);
   categories: string[] = [];
-  tagsOptions: string[] = [];
+  tags: string[] = [];
 
   form = this.fb.group({
     title: ['', Validators.required],
@@ -143,90 +151,39 @@ export class TaskEditComponent implements OnInit {
     status: ['todo', Validators.required],
     priority: ['medium', Validators.required],
     categories: [[] as string[]],
+    tags: [[] as string[]],
     dueDateDate: [null as Date | null],
-    dueDateTime: [''],
-    tags: [[] as string[]]
+    dueDateTime: ['']
   });
 
   ngOnInit() {
-    this.api.categories().subscribe((r: any) => this.categories = r.categories || []);
-    this.api.tags().subscribe((r: any) => this.tagsOptions = r.tags || []);
-    const param = this.route.snapshot.paramMap.get('id');
-    this.isCreate = !param || param === 'new';
-    if (!this.isCreate) {
-      this.id = param!;
-      this.api.get(this.id).subscribe((t: Task) => {
-        const d = t.dueDate ? new Date(t.dueDate) : null;
-        this.form.patchValue({
-          title: t.title,
-          description: t.description,
-          status: t.status,
-          priority: t.priority,
-          categories: Array.isArray(t.categories) && t.categories.length ? t.categories : (t.category ? [t.category] : []),
-          dueDateDate: d,
-          dueDateTime: d ? this.toTime(d) : '',
-          tags: t.tags || []
-        });
-      });
+    this.store.dispatch(TasksActions.loadCategories());
+    this.store.dispatch(TasksActions.loadTags());
+    this.store.select(selectTaskCategories).subscribe(x => this.categories = x || []);
+    this.store.select(selectTaskTags).subscribe(x => this.tags = x || []);
+    const rid = this.route.snapshot.paramMap.get('id');
+    this.id.set(rid);
+    if (rid && rid !== 'new') {
+      this.api.get(rid).subscribe(t => this.patchFromTask(t));
     }
   }
 
-  save() {
-    const v = this.form.value as any;
-    const dueIso = this.combineDue(v.dueDateDate, v.dueDateTime);
-    const payload: any = {
-      title: v.title,
-      description: v.description || '',
-      status: v.status,
-      priority: v.priority,
-      categories: v.categories || [],
-      category: v.categories && v.categories.length ? v.categories[0] : null,
-      tags: v.tags || [],
-      dueDate: dueIso
-    };
-    if (this.isCreate) {
-      this.api.create(payload).subscribe(() => this.router.navigateByUrl('/tasks'));
-    } else {
-      this.api.update(this.id!, payload).subscribe(() => this.router.navigateByUrl('/tasks'));
-    }
+  isNew() {
+    return this.id() === 'new' || !this.id();
   }
 
-  cancel() {
-    this.router.navigateByUrl('/tasks');
-  }
-
-  tagsCtrl() {
-    return this.form.get('tags')!.value as string[];
-  }
-
-  addTag(val: string) {
-    const v = (val || '').trim();
-    if (!v) return;
-    const set = new Set([...(this.tagsCtrl() || []), v]);
-    this.form.patchValue({ tags: Array.from(set) });
-  }
-
-  removeTag(tag: string) {
-    const next = (this.tagsCtrl() || []).filter(x => x !== tag);
-    this.form.patchValue({ tags: next });
-  }
-
-  addCategoryQuick() {
-    const v = (window.prompt('New category name?') || '').trim();
-    if (!v) return;
-    if (!this.categories.includes(v)) this.categories = [...this.categories, v];
-    const cur = new Set(this.form.get('categories')!.value as string[]);
-    cur.add(v);
-    this.form.patchValue({ categories: Array.from(cur) });
-  }
-
-  addTagQuick() {
-    const v = (window.prompt('New tag?') || '').trim();
-    if (!v) return;
-    if (!this.tagsOptions.includes(v)) this.tagsOptions = [...this.tagsOptions, v];
-    const cur = new Set(this.tagsCtrl() || []);
-    cur.add(v);
-    this.form.patchValue({ tags: Array.from(cur) });
+  patchFromTask(t: Task) {
+    const d = t.dueDate ? new Date(t.dueDate) : null;
+    this.form.patchValue({
+      title: t.title || '',
+      description: t.description || '',
+      status: t.status || 'todo',
+      priority: t.priority || 'medium',
+      categories: t.categories && Array.isArray(t.categories) ? t.categories : (t.category ? [t.category] : []),
+      tags: Array.isArray(t.tags) ? t.tags : [],
+      dueDateDate: d,
+      dueDateTime: d ? this.toTime(d) : ''
+    });
   }
 
   toTime(d: Date) {
@@ -234,11 +191,52 @@ export class TaskEditComponent implements OnInit {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  combineDue(date: Date | null, time: string | null) {
+  combine(date: Date | null, time: string | null) {
     if (!date && !time) return null;
     const base = date ? new Date(date) : new Date();
-    const [hh, mm] = (time || '00:00').split(':').map((x: string) => parseInt(x, 10));
+    const [hh, mm] = (time || '00:00').split(':').map(x => parseInt(x, 10));
     base.setHours(Number.isFinite(hh) ? hh : 0, Number.isFinite(mm) ? mm : 0, 0, 0);
     return base.toISOString();
+  }
+
+  save() {
+    const v = this.form.value;
+    const body: any = {
+      title: v.title || '',
+      description: v.description || '',
+      status: v.status || 'todo',
+      priority: v.priority || 'medium',
+      categories: v.categories || [],
+      category: (v.categories || [])[0] || null,
+      tags: v.tags || [],
+      dueDate: this.combine(v.dueDateDate || null, v.dueDateTime || '')
+    };
+    if (this.isNew()) {
+      this.api.create(body).subscribe(() => {
+        this.store.dispatch(TasksActions.loadList({ query: {} }));
+        this.router.navigateByUrl('/tasks');
+      });
+    } else {
+      this.api.update(this.id() as string, body).subscribe(() => {
+        this.store.dispatch(TasksActions.loadList({ query: {} }));
+        this.router.navigateByUrl('/tasks');
+      });
+    }
+  }
+
+  promptAddCategory() {
+    const val = window.prompt('New category name');
+    if (!val) return;
+    if (!this.categories.includes(val)) this.categories = [...this.categories, val];
+    const cur = this.form.value.categories || [];
+    this.form.patchValue({ categories: Array.from(new Set([...cur, val])) });
+  }
+
+  promptAddTag() {
+    const val = window.prompt('New tag');
+    if (!val) return;
+    if (!this.tags.includes(val)) this.tags = [...this.tags, val];
+    const cur = this.form.value.tags || [];
+    this.form.patchValue({ tags: Array.from(new Set([...cur, val])) });
   }
 }
