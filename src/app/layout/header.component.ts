@@ -1,58 +1,50 @@
+// src/app/layout/header.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
+import { RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { selectAuth } from '../store/auth/auth.selectors';
 import { AuthActions } from '../store/auth/auth.actions';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { map } from 'rxjs/operators';
+import { selectAuthUser, selectAuthToken } from '../store/auth/auth.selectors';
+import { combineLatest, map, startWith } from 'rxjs';
 
 @Component({
   standalone: true,
   selector: 'app-header',
-  imports: [CommonModule, RouterLink, RouterLinkActive, MatToolbarModule, MatButtonModule, MatSelectModule, TranslateModule],
+  imports: [CommonModule, RouterModule],
   template: `
-    <mat-toolbar color="primary" class="bar">
-      <a class="brand" routerLink="/">Task Manager</a>
-      <nav class="nav">
-        <a mat-button routerLink="/dashboard" routerLinkActive="active">{{ 'nav.dashboard' | translate }}</a>
-        <a mat-button routerLink="/tasks" routerLinkActive="active">{{ 'nav.tasks' | translate }}</a>
+    <header class="bar">
+      <nav class="left">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+        <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
       </nav>
-      <span class="spacer"></span>
-      <mat-select class="lang" [value]="curLang()" (valueChange)="setLang($event)">
-        <mat-option value="en">EN</mat-option>
-        <mat-option value="bg">BG</mat-option>
-      </mat-select>
-      <ng-container *ngIf="user$ | async as u; else guest">
-        <span class="user">{{ u?.name }}</span>
-        <button mat-button (click)="logout()">{{ 'auth.logout' | translate }}</button>
-      </ng-container>
-      <ng-template #guest>
-        <a mat-button routerLink="/login">{{ 'auth.login' | translate }}</a>
-        <a mat-button routerLink="/register">{{ 'auth.register' | translate }}</a>
-      </ng-template>
-    </mat-toolbar>
+      <div class="right">
+        <ng-container *ngIf="isAuth$ | async; else guest">
+          <span class="user">{{ (user$ | async)?.name || (user$ | async)?.email }}</span>
+          <button class="link" (click)="logout()">Logout</button>
+        </ng-container>
+        <ng-template #guest>
+          <a class="link" routerLink="/login" routerLinkActive="active">Login</a>
+          <a class="link" routerLink="/register" routerLinkActive="active">Register</a>
+        </ng-template>
+      </div>
+    </header>
   `,
   styles: [`
-    .bar { position: sticky; top: 0; z-index: 10; gap: 8px }
-    .brand { color: #fff; text-decoration: none; font-weight: 700; margin-right: 6px }
-    .nav { display: flex; gap: 4px }
-    .nav .active { background: rgba(255,255,255,.12) }
-    .spacer { flex: 1 }
-    .user { margin: 0 8px }
-    .lang { width: 90px; margin-right: 8px; color: #fff }
-    :host ::ng-deep .mat-mdc-select-value, 
-    :host ::ng-deep .mat-mdc-select-arrow { color: #000 }
+    .bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f6f6fb;border-bottom:1px solid #eee}
+    .left a{margin-right:16px;text-decoration:none;color:#222;font-weight:600}
+    .left a.active{color:#3f51b5}
+    .right{display:flex;align-items:center;gap:12px}
+    .user{color:#333;font-weight:600}
+    .link{background:transparent;border:0;color:#3f51b5;cursor:pointer;font-weight:600;padding:4px 8px}
   `]
 })
 export class HeaderComponent {
   private store = inject(Store);
-  private i18n = inject(TranslateService);
-  user$ = this.store.select(selectAuth).pipe(map(a => a.user));
-  logout() { this.store.dispatch(AuthActions.logout()); }
-  curLang() { return this.i18n.currentLang || localStorage.getItem('lang') || 'en'; }
-  setLang(l: string) { localStorage.setItem('lang', l); this.i18n.use(l); }
+  user$ = this.store.select(selectAuthUser);
+  private token$ = this.store.select(selectAuthToken).pipe(startWith(localStorage.getItem('tm_token')));
+  isAuth$ = combineLatest([this.token$, this.user$]).pipe(map(([t, u]) => !!t || !!u));
+
+  logout() {
+    this.store.dispatch(AuthActions.logout());
+  }
 }

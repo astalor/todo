@@ -1,5 +1,5 @@
 // src/app/shared/animations.ts
-import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
+import { trigger, transition, style, animate, query, stagger, keyframes } from '@angular/animations';
 
 export const routeSlide = trigger('routeSlide', [
   transition(':increment', [
@@ -46,5 +46,33 @@ export const scaleIn = trigger('scaleIn', [
   ]),
   transition(':leave', [
     animate('130ms ease-in', style({ transform: 'scale(0.96)' }))
+  ])
+]);
+
+export const bounceIn = trigger('bounceIn', [
+  transition(':enter', [
+    animate('360ms cubic-bezier(.34,1.56,.64,1)', keyframes([
+      style({ offset: 0,   transform: 'translateY(14px) scale(0.92)' }),
+      style({ offset: 0.6, transform: 'translateY(-4px) scale(1.04)' }),
+      style({ offset: 0.8, transform: 'translateY(2px) scale(0.98)' }),
+      style({ offset: 1,   transform: 'translateY(0) scale(1)' })
+    ]))
+  ])
+]);
+
+export const flipIn = trigger('flipIn', [
+  transition(':enter', [
+    style({ transform: 'perspective(800px) rotateY(-14deg) translateZ(0)' }),
+    animate('260ms cubic-bezier(.2,.8,.2,1)', style({ transform: 'perspective(800px) rotateY(0) translateZ(0)' }))
+  ]),
+  transition(':leave', [
+    animate('200ms cubic-bezier(.4,0,.2,1)', style({ transform: 'perspective(800px) rotateY(6deg) translateZ(0)' }))
+  ])
+]);
+
+export const barGrow = trigger('barGrow', [
+  transition(':enter', [
+    style({ transform: 'scaleX(0)' }),
+    animate('360ms cubic-bezier(.2,.8,.2,1)', style({ transform: 'scaleX(1)' }))
   ])
 ]);

@@ -1,28 +1,30 @@
 // src/app/store/auth/auth.reducer.ts
 import { createReducer, on } from '@ngrx/store';
-import { AuthActions, User } from './auth.actions';
+import { AuthActions } from './auth.actions';
 
 export interface AuthState {
-  user: User | null;
+  user: any | null;
   token: string | null;
-  loading: boolean;
   error: string | null;
 }
 
+const initialToken = localStorage.getItem('tm_token');
+
 export const initialState: AuthState = {
   user: null,
-  token: null,
-  loading: false,
+  token: initialToken,
   error: null
 };
 
 export const authReducer = createReducer(
   initialState,
-  on(AuthActions.login, AuthActions.register, AuthActions.loadMe, state => ({ ...state, loading: true, error: null })),
-  on(AuthActions.loginSuccess, (state, { token, user }) => ({ ...state, token, user, loading: false, error: null })),
-  on(AuthActions.registerSuccess, (state, { token, user }) => ({ ...state, token, user, loading: false, error: null })),
-  on(AuthActions.loadMeSuccess, (state, { user }) => ({ ...state, user, loading: false })),
-  on(AuthActions.loginFailure, AuthActions.registerFailure, AuthActions.loadMeFailure, (state, { error }) => ({ ...state, loading: false, error })),
-  on(AuthActions.clearError, state => ({ ...state, error: null })),
-  on(AuthActions.logout, state => ({ ...state, user: null, token: null, error: null }))
+  on(AuthActions.login, state => ({ ...state, error: null })),
+  on(AuthActions.register, state => ({ ...state, error: null })),
+  on(AuthActions.loginSuccess, (state, { user, token }) => ({ ...state, user, token, error: null })),
+  on(AuthActions.registerSuccess, (state, { user, token }) => ({ ...state, user, token, error: null })),
+  on(AuthActions.loginFailure, (state, { error }) => ({ ...state, error })),
+  on(AuthActions.registerFailure, (state, { error }) => ({ ...state, error })),
+  on(AuthActions.loadMeSuccess, (state, { user }) => ({ ...state, user })),
+  on(AuthActions.loadMeFailure, (state, { error }) => ({ ...state, user: null, token: null, error })),
+  on(AuthActions.logout, () => ({ user: null, token: null, error: null }))
 );
