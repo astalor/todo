@@ -261,7 +261,7 @@ app.get('/api/tasks/:id', authMiddleware, (req, res) => {
   res.json(t);
 });
 
-app.patch('/api/tasks/:id', authMiddleware, (req, res) => {
+app.put('/api/tasks/:id', authMiddleware, (req, res) => {
   const taskId = String(req.params.id);
   console.log('SELECT * FROM tasks WHERE id=? AND ownerId=?', taskId, req.user.sub);
   const existing = db.prepare('SELECT * FROM tasks WHERE id=? AND ownerId=?').get(taskId, req.user.sub);
