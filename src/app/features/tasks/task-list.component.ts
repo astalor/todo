@@ -267,6 +267,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
+    this.store.dispatch(TasksActions.loadCategories());
+    this.store.dispatch(TasksActions.loadTags());
     this.sub = this.route.queryParams.subscribe(p => {
       const catsCsv = p['category'] || '';
       const catsArr = catsCsv ? String(catsCsv).split(',').map((x: string) => x.trim()).filter(Boolean) : [];
@@ -301,8 +303,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
       };
       Object.keys(queryForApi).forEach(k => (queryForApi[k] === '' || queryForApi[k] == null) && delete queryForApi[k]);
       this.store.dispatch(TasksActions.loadList({ query: queryForApi }));
-      this.store.dispatch(TasksActions.loadCategories());
-      this.store.dispatch(TasksActions.loadTags());
     });
     this.total$.subscribe(v => this.total.set(v));
     this.page$.subscribe(v => this.page.set(v));

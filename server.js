@@ -147,7 +147,7 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 });
 
 app.get('/api/tasks', authMiddleware, (req, res) => {
-  let { page = '1', pageSize = '20', status, priority, category, tags, q, dueFrom, dueTo, sortBy, sortDir, excludeDone } = req.query;
+  let { page = '1', pageSize = '20', status, priority, category, tags, tagsMode, q, dueFrom, dueTo, sortBy, sortDir, excludeDone } = req.query;
   const p = parseInt(String(page), 10); page = Number.isFinite(p) && p > 0 ? p : 1;
   const ps = parseInt(String(pageSize), 10); pageSize = Number.isFinite(ps) && ps > 0 ? Math.min(ps, 100) : 20;
   const sortKey = SORT_KEYS.has(String(sortBy || '').trim()) ? String(sortBy).trim() : 'createdAt';
@@ -170,7 +170,11 @@ app.get('/api/tasks', authMiddleware, (req, res) => {
   if (typeof category === 'string' && category.trim() !== '') {
     const cats = String(category).split(',').map(s => s.trim()).filter(Boolean);
     if (cats.length) {
-      clauses.push(`EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(categories) THEN categories ELSE json_array(category) END) je WHERE je.value IN (${cats.map(() => '?').join(',')}))`);
+      clauses.push(`EXISTS (
+        SELECT 1
+        FROM json_each(CASE WHEN json_valid(tasks.categories) THEN tasks.categories ELSE json_array(tasks.category) END) je
+        WHERE je.value IN (${cats.map(() => '?').join(',')})
+      )`);
       params.push(...cats);
     }
   }
@@ -178,8 +182,15 @@ app.get('/api/tasks', authMiddleware, (req, res) => {
   if (typeof tags === 'string' && tags.trim() !== '') {
     const tgs = String(tags).split(',').map(s => s.trim()).filter(Boolean);
     if (tgs.length) {
-      clauses.push(`(SELECT COUNT(DISTINCT je.value) FROM json_each(CASE WHEN json_valid(tags) THEN tags ELSE '[]' END) je WHERE je.value IN (${tgs.map(() => '?').join(',')})) = ?`);
-      params.push(...tgs, tgs.length);
+      const existsExpr = `EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(tasks.tags) THEN tasks.tags ELSE '[]' END) je WHERE je.value = ?)`;
+      const mode = String(tagsMode || 'any').toLowerCase() === 'all' ? 'all' : 'any';
+      if (mode === 'all') {
+        clauses.push(tgs.map(() => existsExpr).join(' AND '));
+        params.push(...tgs);
+      } else {
+        clauses.push(`(${tgs.map(() => existsExpr).join(' OR ')})`);
+        params.push(...tgs);
+      }
     }
   }
 

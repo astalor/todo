@@ -1,15 +1,19 @@
+// src/app/store/tasks/tasks.effects.ts
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { TasksActions } from './tasks.actions';
 import { TasksService } from '../../services/tasks.service';
-import { catchError, map, mergeMap, of, switchMap, tap } from 'rxjs';
+import { catchError, map, mergeMap, of, switchMap, tap, withLatestFrom } from 'rxjs';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { selectLastQuery } from './tasks.selectors';
 
 @Injectable()
 export class TasksEffects {
   private actions$ = inject(Actions);
   private api = inject(TasksService);
   private router = inject(Router);
+  private store = inject(Store);
 
   loadList$ = createEffect(() =>
     this.actions$.pipe(
@@ -30,7 +34,11 @@ export class TasksEffects {
       ofType(TasksActions.create),
       mergeMap(({ task }) =>
         this.api.create(task).pipe(
-          map(t => TasksActions.createSuccess({ task: t })),
+          withLatestFrom(this.store.select(selectLastQuery)),
+          mergeMap(([t, last]) => [
+            TasksActions.createSuccess({ task: t }),
+            TasksActions.loadList({ query: last || {} })
+          ]),
           catchError(err => of(TasksActions.createFailure({ error: err?.error?.message || 'Create failed' })))
         )
       )
@@ -42,7 +50,11 @@ export class TasksEffects {
       ofType(TasksActions.update),
       mergeMap(({ id, changes }) =>
         this.api.update(id, changes).pipe(
-          map(t => TasksActions.updateSuccess({ task: t })),
+          withLatestFrom(this.store.select(selectLastQuery)),
+          mergeMap(([t, last]) => [
+            TasksActions.updateSuccess({ task: t }),
+            TasksActions.loadList({ query: last || {} })
+          ]),
           catchError(err => of(TasksActions.updateFailure({ error: err?.error?.message || 'Update failed' })))
         )
       )
@@ -54,7 +66,11 @@ export class TasksEffects {
       ofType(TasksActions.delete),
       mergeMap(({ id }) =>
         this.api.delete(id).pipe(
-          map(() => TasksActions.deleteSuccess({ id })),
+          withLatestFrom(this.store.select(selectLastQuery)),
+          mergeMap(([_, last]) => [
+            TasksActions.deleteSuccess({ id }),
+            TasksActions.loadList({ query: last || {} })
+          ]),
           catchError(err => of(TasksActions.deleteFailure({ error: err?.error?.message || 'Delete failed' })))
         )
       )
@@ -94,7 +110,12 @@ export class TasksEffects {
   redirectAfterSave$ = createEffect(() =>
     this.actions$.pipe(
       ofType(TasksActions.createSuccess, TasksActions.updateSuccess),
-      tap(() => this.router.navigateByUrl('/tasks'))
+      withLatestFrom(this.store.select(selectLastQuery)),
+      tap(([_, last]) => {
+        const url = this.router.url.split('?')[0];
+        const onForm = url === '/tasks/new' || (/^\/tasks\/[^/]+$/.test(url) && url !== '/tasks');
+        if (onForm) this.router.navigate(['/tasks'], { queryParams: last || {} });
+      })
     ), { dispatch: false }
   );
 }
