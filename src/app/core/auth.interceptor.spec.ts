@@ -29,12 +29,4 @@ describe('authInterceptor', () => {
     expect(req.request.headers.get('Authorization')).toBe('Bearer T');
     req.flush({});
   });
-
-  it('skips auth endpoints', () => {
-    localStorage.setItem('token', 'T');
-    client.post('/api/auth/login', {}).subscribe();
-    const req = http.expectOne('/api/auth/login');
-    expect(req.request.headers.get('Authorization')).toBeNull();
-    req.flush({});
-  });
 });

@@ -1,14 +1,11 @@
-// src/app/core/auth.guard.spec.ts
 import { TestBed } from '@angular/core/testing';
-import { RouterStateSnapshot, UrlTree } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter, Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { authGuard } from './auth.guard';
-import { of, isObservable } from 'rxjs';
-import { Component } from '@angular/core';
 
-@Component({selector: 'x-dummy', template: ''})
-class DummyCmp {}
+function runGuard(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+  return TestBed.runInInjectionContext(() => authGuard(route, state));
+}
 
 describe('authGuard (functional)', () => {
   let store: MockStore;
@@ -16,48 +13,30 @@ describe('authGuard (functional)', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      imports: [RouterTestingModule.withRoutes([
-        { path: 'login', component: DummyCmp },
-        { path: 'tasks', component: DummyCmp }
-      ])],
-      declarations: [DummyCmp],
-      providers: [provideMockStore()]
+      providers: [
+        provideRouter([{ path: 'login', loadComponent: () => Promise.resolve(class {}) }]),
+        provideMockStore({ initialState: { auth: { token: null, user: null } } })
+      ]
     });
     store = TestBed.inject(MockStore);
   });
 
-  it('blocks when not authenticated and redirects to /login', done => {
-    spyOn(store, 'select').and.returnValue(of(false));
-    const rs = { url: '/tasks' } as RouterStateSnapshot;
-    const result = TestBed.runInInjectionContext(() => authGuard({} as any, rs));
-    if (isObservable(result)) {
-      result.subscribe(v => {
-        const redirected = v instanceof UrlTree ? v.toString().includes('/login') : v === false;
-        expect(redirected).toBeTrue();
-        done();
-      });
-    } else {
-      const redirected = result instanceof UrlTree ? result.toString().includes('/login') : result === false;
-      expect(redirected).toBeTrue();
-      done();
-    }
+  it('allows when authenticated', (done) => {
+    store.setState({ auth: { token: 'T', user: { id: '1', email: 'e' } } });
+    localStorage.setItem('tm_token', 'T');
+    const rs = { url: '/' } as RouterStateSnapshot;
+    const res = runGuard({} as ActivatedRouteSnapshot, rs) as any;
+    if (typeof res?.subscribe === 'function') {
+      res.subscribe((v: boolean | UrlTree) => { expect(v === true).toBeTrue(); done(); });
+    } else { expect(res === true).toBeTrue(); done(); }
   });
 
-  it('allows when authenticated', done => {
-    localStorage.setItem('token', 't');
-    spyOn(store, 'select').and.returnValue(of(true));
-    const rs = { url: '/tasks' } as RouterStateSnapshot;
-    const result = TestBed.runInInjectionContext(() => authGuard({} as any, rs));
-    if (isObservable(result)) {
-      result.subscribe(v => {
-        const allowed = v === true || !(v instanceof UrlTree);
-        expect(allowed).toBeTrue();
-        done();
-      });
-    } else {
-      const allowed = result === true || !(result instanceof UrlTree);
-      expect(allowed).toBeTrue();
-      done();
-    }
+  it('redirects to login when unauthenticated', (done) => {
+    store.setState({ auth: { token: null, user: null } });
+    const rs = { url: '/private' } as RouterStateSnapshot;
+    const res = runGuard({} as ActivatedRouteSnapshot, rs) as any;
+    if (typeof res?.subscribe === 'function') {
+      res.subscribe((v: boolean | UrlTree) => { expect(v instanceof UrlTree || v === false).toBeTrue(); done(); });
+    } else { expect(res instanceof UrlTree || res === false).toBeTrue(); done(); }
   });
 });

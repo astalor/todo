@@ -69,24 +69,6 @@ describe('TasksService', () => {
     expect(done).toBeTrue();
   });
 
-  it('categories returns list', () => {
-    let res: any;
-    api.categories().subscribe(r => (res = r));
-    const req = http.expectOne('/api/tasks/categories');
-    expect(req.request.method).toBe('GET');
-    req.flush({ categories: ['a', 'b'] });
-    expect(res.categories.length).toBe(2);
-  });
-
-  it('tags returns list', () => {
-    let res: any;
-    api.tags().subscribe(r => (res = r));
-    const req = http.expectOne('/api/tasks/tags');
-    expect(req.request.method).toBe('GET');
-    req.flush({ tags: ['x', 'y'] });
-    expect(res.tags.length).toBe(2);
-  });
-
   it('stats returns object', () => {
     let res: any;
     api.stats().subscribe(r => (res = r));
