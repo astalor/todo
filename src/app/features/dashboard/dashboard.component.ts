@@ -1,3 +1,4 @@
+// src/app/features/dashboard/dashboard.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
@@ -11,13 +12,13 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { elementSlide, listSlideStagger } from '../../shared/animations';
+import { elementSlide, listSlideStagger, scaleIn } from '../../shared/animations';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
   imports: [CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatIconModule, MatDividerModule, MatButtonModule, MatTooltipModule],
-  animations: [elementSlide, listSlideStagger],
+  animations: [elementSlide, listSlideStagger, scaleIn],
   template: `
     <div class="wrap">
       <div class="header">
