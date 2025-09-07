@@ -181,7 +181,7 @@ export class TaskEditComponent implements OnInit {
       description: t.description || '',
       status: t.status || 'todo',
       priority: t.priority || 'medium',
-      categories: t.categories && Array.isArray(t.categories) ? t.categories : (t.category ? [t.category] : []),
+      categories: Array.isArray(t.categories) ? t.categories : [],
       tags: Array.isArray(t.tags) ? t.tags : [],
       dueDateDate: d,
       dueDateTime: d ? this.toTime(d) : ''

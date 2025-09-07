@@ -1,27 +1,37 @@
-import { createReducer, on } from '@ngrx/store';
+// src/app/store/tasks/tasks.reducer.ts
 import { createEntityAdapter, EntityState } from '@ngrx/entity';
-import { Task } from '../../services/tasks.service';
-import { TasksActions, TaskQuery } from './tasks.actions';
+import { createReducer, on } from '@ngrx/store';
+import { TasksActions } from './tasks.actions';
 
-export interface TasksState extends EntityState<Task> {
+export interface TaskEntity {
+  id: string;
+  title: string;
+  description?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  categories?: string[] | null;
+  tags?: string[] | null;
+  dueDate?: string | null;
+  dueTime?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface TasksState extends EntityState<TaskEntity> {
   loading: boolean;
   error: string | null;
   page: number;
   pageSize: number;
   total: number;
   totalPages: number;
-  lastQuery: TaskQuery;
+  lastQuery: any;
   categories: string[];
   tags: string[];
   stats: any | null;
 }
 
-const adapter = createEntityAdapter<Task>({
-  selectId: t => t.id,
-  sortComparer: false
-});
-
-const initialState: TasksState = adapter.getInitialState({
+export const adapter = createEntityAdapter<TaskEntity>();
+export const initialState: TasksState = adapter.getInitialState({
   loading: false,
   error: null,
   page: 1,
@@ -36,27 +46,18 @@ const initialState: TasksState = adapter.getInitialState({
 
 export const tasksReducer = createReducer(
   initialState,
-  on(TasksActions.loadList, (state) => ({ ...state, loading: true, error: null })),
-  on(TasksActions.loadListSuccess, (state, { data, page, pageSize, total, totalPages, query }) =>
-    adapter.setAll(data, { ...state, loading: false, page, pageSize, total, totalPages, lastQuery: query })
+  on(TasksActions.loadList, (state, { query }) => ({ ...state, loading: true, error: null, lastQuery: query })),
+  on(TasksActions.loadListSuccess, (state, { data, page, pageSize, total, totalPages }) =>
+    adapter.setAll(data as TaskEntity[], { ...state, loading: false, page, pageSize, total, totalPages })
   ),
   on(TasksActions.loadListFailure, (state, { error }) => ({ ...state, loading: false, error })),
-  on(TasksActions.createSuccess, (state, { task }) => adapter.addOne(task, { ...state })),
-  on(TasksActions.updateSuccess, (state, { task }) => adapter.upsertOne(task, { ...state })),
-  on(TasksActions.deleteSuccess, (state, { id }) => adapter.removeOne(id, { ...state })),
+  on(TasksActions.createSuccess, (state, { task }) => adapter.addOne(task as TaskEntity, state)),
+  on(TasksActions.updateSuccess, (state, { task }) => adapter.upsertOne(task as TaskEntity, state)),
+  on(TasksActions.deleteSuccess, (state, { id }) => adapter.removeOne(id, state)),
   on(TasksActions.loadCategoriesSuccess, (state, { categories }) => ({ ...state, categories })),
   on(TasksActions.loadTagsSuccess, (state, { tags }) => ({ ...state, tags })),
-  on(TasksActions.loadStats, (state) => ({ ...state, loading: true })),
-  on(TasksActions.loadStatsSuccess, (state, { stats }) => ({ ...state, stats, loading: false })),
-  on(
-    TasksActions.createFailure,
-    TasksActions.updateFailure,
-    TasksActions.deleteFailure,
-    TasksActions.loadCategoriesFailure,
-    TasksActions.loadTagsFailure,
-    TasksActions.loadStatsFailure,
-    (state, { error }) => ({ ...state, loading: false, error })
-  )
+  on(TasksActions.loadStatsSuccess, (state, { stats }) => ({ ...state, stats })),
+  on(TasksActions.clearError, state => ({ ...state, error: null }))
 );
 
 export const { selectAll: selectAllTasks, selectEntities: selectTaskEntities } = adapter.getSelectors();

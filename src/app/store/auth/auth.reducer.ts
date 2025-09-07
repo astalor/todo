@@ -1,34 +1,28 @@
+// src/app/store/auth/auth.reducer.ts
 import { createReducer, on } from '@ngrx/store';
-import { AuthActions } from './auth.actions';
+import { AuthActions, User } from './auth.actions';
 
 export interface AuthState {
-  user: any | null;
+  user: User | null;
   token: string | null;
   loading: boolean;
   error: string | null;
-  isAuthenticated: boolean;
 }
 
-const storedToken = typeof localStorage !== 'undefined' ? localStorage.getItem('tm_token') : null;
-
-const initialState: AuthState = {
+export const initialState: AuthState = {
   user: null,
-  token: storedToken,
+  token: null,
   loading: false,
-  error: null,
-  isAuthenticated: !!storedToken
+  error: null
 };
 
 export const authReducer = createReducer(
   initialState,
   on(AuthActions.login, AuthActions.register, AuthActions.loadMe, state => ({ ...state, loading: true, error: null })),
-  on(AuthActions.loginSuccess, AuthActions.registerSuccess, (state, { user, token }) => ({
-    ...state, loading: false, user, token, isAuthenticated: true
-  })),
-  on(AuthActions.loadMeSuccess, (state, { user }) => ({ ...state, loading: false, user, isAuthenticated: true })),
-  on(AuthActions.loginFailure, AuthActions.registerFailure, AuthActions.loadMeFailure, (state, { error }) => ({
-    ...state, loading: false, error
-  })),
+  on(AuthActions.loginSuccess, (state, { token, user }) => ({ ...state, token, user, loading: false, error: null })),
+  on(AuthActions.registerSuccess, (state, { token, user }) => ({ ...state, token, user, loading: false, error: null })),
+  on(AuthActions.loadMeSuccess, (state, { user }) => ({ ...state, user, loading: false })),
+  on(AuthActions.loginFailure, AuthActions.registerFailure, AuthActions.loadMeFailure, (state, { error }) => ({ ...state, loading: false, error })),
   on(AuthActions.clearError, state => ({ ...state, error: null })),
-  on(AuthActions.logout, state => ({ user: null, token: null, loading: false, error: null, isAuthenticated: false }))
+  on(AuthActions.logout, state => ({ ...state, user: null, token: null, error: null }))
 );

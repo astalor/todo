@@ -1,34 +1,29 @@
 // src/app/services/tasks.service.ts
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { TaskQuery } from '../store/tasks/tasks.actions';
+import { Task as StoreTask, TaskQuery } from '../store/tasks/tasks.actions';
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'todo' | 'in-progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
-  category: string | null;
-  categories: string[];
-  tags: string[];
-  dueDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-  ownerId: string;
+export interface Task extends StoreTask {}
+
+export interface Paged<T> {
+  data: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TasksService {
   private http = inject(HttpClient);
 
-  list(query: TaskQuery): Observable<any> {
+  list(query: TaskQuery): Observable<Paged<Task>> {
     let params = new HttpParams();
     Object.entries(query || {}).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
     });
-    return this.http.get<any>('/api/tasks', { params });
+    return this.http.get<Paged<Task>>('/api/tasks', { params });
   }
 
   get(id: string): Observable<Task> {
@@ -40,22 +35,22 @@ export class TasksService {
   }
 
   update(id: string, changes: Partial<Task>): Observable<Task> {
-    return this.http.put<Task>(`/api/tasks/${id}`, changes);
+    return this.http.patch<Task>(`/api/tasks/${id}`, changes);
   }
 
-  delete(id: string): Observable<{ deleted: boolean; id: string }> {
-    return this.http.delete<{ deleted: boolean; id: string }>(`/api/tasks/${id}`);
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/tasks/${id}`);
   }
 
-  categories() {
-    return this.http.get<{ categories: string[] }>('/api/meta/categories');
+  stats(): Observable<any> {
+    return this.http.get<any>('/api/tasks/stats');
   }
 
-  tags() {
-    return this.http.get<{ tags: string[] }>('/api/meta/tags');
+  categories(): Observable<{ categories: string[] }> {
+    return this.http.get<{ categories: string[] }>('/api/tasks/categories');
   }
 
-  stats() {
-    return this.http.get<any>('/api/stats');
+  tags(): Observable<{ tags: string[] }> {
+    return this.http.get<{ tags: string[] }>('/api/tasks/tags');
   }
 }
