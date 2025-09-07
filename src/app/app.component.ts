@@ -16,14 +16,15 @@ import { routeSlide } from './shared/animations';
   template: `
     <div class="shell">
       <app-header></app-header>
-      <main class="view">
-        <router-outlet @routeSlide></router-outlet>
+      <main class="view" [@routeSlide]="prepare(o)">
+        <router-outlet #o="outlet"></router-outlet>
       </main>
     </div>
   `,
   styles: [`
     .shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
-    .view { position: relative; padding: 12px; overflow-x: hidden; }
+    .view { position: relative; padding: 12px; overflow: hidden; contain: paint; }
+    .view > * { will-change: transform; backface-visibility: hidden; }
   `]
 })
 export class AppComponent {
@@ -35,7 +36,7 @@ export class AppComponent {
     this.store.select(selectTasksError).subscribe(err => { if (err) this.snack.open(err, 'Close', { duration: 3000 }); });
   }
 
-  prepareRoute(outlet: RouterOutlet) {
-    return outlet && outlet.isActivated ? outlet.activatedRoute?.routeConfig?.path : null;
+  prepare(outlet: RouterOutlet) {
+    return outlet && outlet.isActivated ? (outlet.activatedRoute.snapshot.data?.['depth'] ?? 0) : 0;
   }
 }

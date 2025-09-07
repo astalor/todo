@@ -1,12 +1,8 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (route, state): boolean | UrlTree => {
   const router = inject(Router);
   const token = localStorage.getItem('tm_token');
-  if (!token) {
-    router.navigateByUrl('/login');
-    return false;
-  }
-  return true;
+  return token ? true : router.parseUrl('/login?redirect=' + encodeURIComponent(state.url));
 };

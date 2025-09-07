@@ -72,7 +72,7 @@ import { elementSlide, listSlideStagger } from '../../shared/animations';
       </mat-card>
 
       <div class="grid" *ngIf="stats$ | async as s" [@listSlideStagger]>
-        <mat-card class="card">
+        <mat-card class="card" @elementSlide>
           <div class="card-title">Status</div>
           <div class="bar clickable" *ngFor="let k of statusKeys" (click)="goToTasks({ status: k })">
             <div class="bar-label">{{ k }}</div>
@@ -81,7 +81,7 @@ import { elementSlide, listSlideStagger } from '../../shared/animations';
           </div>
         </mat-card>
 
-        <mat-card class="card">
+        <mat-card class="card" @elementSlide>
           <div class="card-title">Priority</div>
           <div class="bar clickable" *ngFor="let k of priorityKeys" (click)="goToTasks({ priority: k })">
             <div class="bar-label">{{ k }}</div>
@@ -90,10 +90,10 @@ import { elementSlide, listSlideStagger } from '../../shared/animations';
           </div>
         </mat-card>
 
-        <mat-card class="card">
+        <mat-card class="card" @elementSlide>
           <div class="card-title">Categories</div>
           <div class="chip-wrap" *ngIf="categoryList(s) as cats; else noCat">
-            <mat-chip-set>
+            <mat-chip-set @elementSlide>
               <mat-chip *ngFor="let c of cats | slice:0:12" matTooltip="{{ s.byCategory[c] }} tasks" (click)="goToTasks({ category: c })">
                 {{ c }} ({{ s.byCategory[c] }})
               </mat-chip>
@@ -105,7 +105,7 @@ import { elementSlide, listSlideStagger } from '../../shared/animations';
           <mat-divider></mat-divider>
           <div class="card-title small">Top Tags</div>
           <div class="chip-wrap" *ngIf="s.topTags?.length; else noTags">
-            <mat-chip-set>
+            <mat-chip-set @scaleIn>
               <mat-chip *ngFor="let t of s.topTags; trackBy: tagTrack">
                 {{ t.tag }} ({{ t.count }})
               </mat-chip>
