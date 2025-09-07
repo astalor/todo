@@ -1,0 +1,58 @@
+{
+  "auth": { "login": "Login", "register": "Register", "logout": "Logout" },
+  "common": {
+    "status": "Status",
+    "priority": "Priority",
+    "categories": "Categories",
+    "tags": "Tags",
+    "dueDate": "Due date",
+    "time": "Time",
+    "apply": "Apply",
+    "reset": "Reset",
+    "prev": "Prev",
+    "next": "Next",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "any": "Any",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "dashboard": {
+    "h1": "Dashboard",
+    "refresh": "Refresh",
+    "total": "Total",
+    "overdue": "Overdue",
+    "dueToday": "Due Today",
+    "next7": "Next 7 Days",
+    "completion": "Completion",
+    "status": "Status",
+    "priority": "Priority",
+    "categories": "Categories",
+    "topTags": "Top Tags",
+    "noCategories": "No categories yet",
+    "noTags": "No tags yet",
+    "tasks": "tasks"
+  },
+  "status": { "todo": "To Do", "inProgress": "In Progress", "done": "Done" },
+  "priority": { "low": "Low", "medium": "Medium", "high": "High" },
+  "list": {
+    "filters": "Filters",
+    "newTask": "New Task",
+    "search": "Search",
+    "sortBy": "Sort by",
+    "sortDir": "Direction",
+    "fromDate": "From date",
+    "toDate": "To date",
+    "title": "Title",
+    "page": "Page"
+  },
+  "sort": { "asc": "Ascending", "desc": "Descending", "createdAt": "Created", "dueDate": "Due date" },
+  "edit": {
+    "title": "Title",
+    "description": "Description",
+    "addCategory": "Add Category",
+    "addTag": "Add Tag",
+    "create": "Create",
+    "save": "Save"
+  }
+}

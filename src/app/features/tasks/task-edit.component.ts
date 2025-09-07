@@ -13,6 +13,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { TasksService, Task } from '../../services/tasks.service';
 import { TasksActions } from '../../store/tasks/tasks.actions';
 import { selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.selectors';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   standalone: true,
@@ -26,56 +27,57 @@ import { selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.se
     MatButtonModule,
     MatSelectModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    TranslateModule
   ],
   template: `
     <div class="wrap">
       <form [formGroup]="form" (ngSubmit)="save()">
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Title</mat-label>
+          <mat-label>{{ 'edit.title' | translate }}</mat-label>
           <input matInput formControlName="title">
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Description</mat-label>
+          <mat-label>{{ 'edit.description' | translate }}</mat-label>
           <textarea matInput rows="6" formControlName="description"></textarea>
         </mat-form-field>
 
         <div class="row meta">
           <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
+            <mat-label>{{ 'common.status' | translate }}</mat-label>
             <mat-select formControlName="status" required>
-              <mat-option value="todo">To Do</mat-option>
-              <mat-option value="in-progress">In Progress</mat-option>
-              <mat-option value="done">Done</mat-option>
+              <mat-option value="todo">{{ 'status.todo' | translate }}</mat-option>
+              <mat-option value="in-progress">{{ 'status.inProgress' | translate }}</mat-option>
+              <mat-option value="done">{{ 'status.done' | translate }}</mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Priority</mat-label>
+            <mat-label>{{ 'common.priority' | translate }}</mat-label>
             <mat-select formControlName="priority" required>
-              <mat-option value="low">Low</mat-option>
-              <mat-option value="medium">Medium</mat-option>
-              <mat-option value="high">High</mat-option>
+              <mat-option value="low">{{ 'priority.low' | translate }}</mat-option>
+              <mat-option value="medium">{{ 'priority.medium' | translate }}</mat-option>
+              <mat-option value="high">{{ 'priority.high' | translate }}</mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Due date</mat-label>
+            <mat-label>{{ 'common.dueDate' | translate }}</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="dueDateDate">
             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-datepicker #picker></mat-datepicker>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Time</mat-label>
+            <mat-label>{{ 'common.time' | translate }}</mat-label>
             <input matInput type="time" formControlName="dueDateTime">
           </mat-form-field>
         </div>
 
         <div class="line">
           <mat-form-field appearance="outline" class="flex">
-            <mat-label>Categories</mat-label>
+            <mat-label>{{ 'common.categories' | translate }}</mat-label>
             <mat-select formControlName="categories" multiple>
               <mat-select-trigger>
                 <ng-container *ngIf="form.value.categories?.length as c">
@@ -86,12 +88,12 @@ import { selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.se
               <mat-option *ngFor="let c of categories" [value]="c">{{ c }}</mat-option>
             </mat-select>
           </mat-form-field>
-          <button class="add-btn" mat-stroked-button type="button" (click)="promptAddCategory()">Add Category</button>
+          <button class="add-btn" mat-stroked-button type="button" (click)="promptAddCategory()">{{ 'edit.addCategory' | translate }}</button>
         </div>
 
         <div class="line">
           <mat-form-field appearance="outline" class="flex">
-            <mat-label>Tags</mat-label>
+            <mat-label>{{ 'common.tags' | translate }}</mat-label>
             <mat-select formControlName="tags" multiple>
               <mat-select-trigger>
                 <ng-container *ngIf="form.value.tags?.length as c">
@@ -102,12 +104,12 @@ import { selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.se
               <mat-option *ngFor="let t of tags" [value]="t">{{ t }}</mat-option>
             </mat-select>
           </mat-form-field>
-          <button class="add-btn" mat-stroked-button type="button" (click)="promptAddTag()">Add Tag</button>
+          <button class="add-btn" mat-stroked-button type="button" (click)="promptAddTag()">{{ 'edit.addTag' | translate }}</button>
         </div>
 
         <div class="actions">
-          <button mat-flat-button color="primary" [disabled]="form.invalid">{{ isNew() ? 'Create' : 'Save' }}</button>
-          <a mat-stroked-button routerLink="/tasks">Cancel</a>
+          <button mat-flat-button color="primary" [disabled]="form.invalid">{{ isNew() ? ('edit.create' | translate) : ('edit.save' | translate) }}</button>
+          <a mat-stroked-button routerLink="/tasks">{{ 'common.cancel' | translate }}</a>
         </div>
       </form>
     </div>

@@ -15,6 +15,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   standalone: true,
@@ -30,96 +31,116 @@ import { Subscription } from 'rxjs';
     MatDatepickerModule,
     MatNativeDateModule,
     MatAutocompleteModule,
-    RouterLink
+    RouterLink,
+    TranslateModule
   ],
   template: `
     <div class="wrap">
       <div class="filters-header">
         <button mat-stroked-button class="filters-toggle" (click)="filtersOpen = !filtersOpen">
           <mat-icon>tune</mat-icon>
-          Filters
+          {{ 'list.filters' | translate }}
         </button>
         <span class="spacer"></span>
-        <button mat-flat-button color="primary" type="button" (click)="create()">New Task</button>
+        <button mat-flat-button color="primary" type="button" (click)="create()">{{ 'list.newTask' | translate }}</button>
       </div>
 
       <form [formGroup]="form" class="filters filters-collapsible" [class.collapsed]="!filtersOpen" (ngSubmit)="apply()">
         <mat-form-field appearance="outline">
-          <mat-label>Status</mat-label>
+          <mat-label>{{ 'common.status' | translate }}</mat-label>
           <mat-select formControlName="status">
-            <mat-option value="">Any</mat-option>
-            <mat-option value="todo">To Do</mat-option>
-            <mat-option value="in-progress">In Progress</mat-option>
-            <mat-option value="done">Done</mat-option>
+            <mat-option value="">{{ 'common.any' | translate }}</mat-option>
+            <mat-option value="todo">{{ 'status.todo' | translate }}</mat-option>
+            <mat-option value="in-progress">{{ 'status.inProgress' | translate }}</mat-option>
+            <mat-option value="done">{{ 'status.done' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Priority</mat-label>
+          <mat-label>{{ 'common.priority' | translate }}</mat-label>
           <mat-select formControlName="priority">
-            <mat-option value="">Any</mat-option>
-            <mat-option value="low">Low</mat-option>
-            <mat-option value="medium">Medium</mat-option>
-            <mat-option value="high">High</mat-option>
+            <mat-option value="">{{ 'common.any' | translate }}</mat-option>
+            <mat-option value="low">{{ 'priority.low' | translate }}</mat-option>
+            <mat-option value="medium">{{ 'priority.medium' | translate }}</mat-option>
+            <mat-option value="high">{{ 'priority.high' | translate }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Categories</mat-label>
+          <mat-label>{{ 'common.categories' | translate }}</mat-label>
           <mat-select formControlName="categories" multiple>
             <mat-option *ngFor="let c of categories$ | async" [value]="c">{{ c }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Tags</mat-label>
+          <mat-label>{{ 'common.tags' | translate }}</mat-label>
           <mat-select formControlName="tags" multiple>
             <mat-option *ngFor="let t of tags$ | async" [value]="t">{{ t }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="search-ff">
-          <mat-label>Search</mat-label>
+          <mat-label>{{ 'list.search' | translate }}</mat-label>
           <input matInput formControlName="q">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'list.sortBy' | translate }}</mat-label>
+          <mat-select formControlName="sortBy">
+            <mat-option value="createdAt">{{ 'sort.createdAt' | translate }}</mat-option>
+            <mat-option value="dueDate">{{ 'sort.dueDate' | translate }}</mat-option>
+            <mat-option value="priority">{{ 'common.priority' | translate }}</mat-option>
+            <mat-option value="status">{{ 'common.status' | translate }}</mat-option>
+            <mat-option value="title">{{ 'list.title' | translate }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'list.sortDir' | translate }}</mat-label>
+          <mat-select formControlName="sortDir">
+            <mat-option value="desc">{{ 'sort.desc' | translate }}</mat-option>
+            <mat-option value="asc">{{ 'sort.asc' | translate }}</mat-option>
+          </mat-select>
         </mat-form-field>
 
         <div class="range-row">
           <div class="range">
             <mat-form-field appearance="outline">
-              <mat-label>From date</mat-label>
+              <mat-label>{{ 'list.fromDate' | translate }}</mat-label>
               <input matInput [matDatepicker]="fromPicker" formControlName="dueFromDate">
               <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
               <mat-datepicker #fromPicker></mat-datepicker>
             </mat-form-field>
             <mat-form-field appearance="outline" class="time-ff">
-              <mat-label>Time</mat-label>
+              <mat-label>{{ 'common.time' | translate }}</mat-label>
               <input matInput type="time" formControlName="dueFromTime">
             </mat-form-field>
           </div>
 
           <div class="range">
             <mat-form-field appearance="outline">
-              <mat-label>To date</mat-label>
+              <mat-label>{{ 'list.toDate' | translate }}</mat-label>
               <input matInput [matDatepicker]="toPicker" formControlName="dueToDate">
               <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
               <mat-datepicker #toPicker></mat-datepicker>
             </mat-form-field>
             <mat-form-field appearance="outline" class="time-ff">
-              <mat-label>Time</mat-label>
+              <mat-label>{{ 'common.time' | translate }}</mat-label>
               <input matInput type="time" formControlName="dueToTime">
             </mat-form-field>
           </div>
         </div>
 
-        <button mat-raised-button color="primary">Apply</button>
-        <button mat-stroked-button type="button" (click)="reset()">Reset</button>
+        <button mat-raised-button color="primary">{{ 'common.apply' | translate }}</button>
+        <button mat-stroked-button type="button" (click)="reset()">{{ 'common.reset' | translate }}</button>
       </form>
 
       <div class="toolbar">
-        <div class="page">Page {{ page$ | async }}</div>
+        <div class="page">{{ 'list.page' | translate }} {{ page$ | async }}</div>
         <span class="spacer"></span>
-        <button mat-stroked-button (click)="prev()" [disabled]="(page$ | async) === 1">Prev</button>
-        <button mat-stroked-button (click)="next()" [disabled]="disableNext()">Next</button>
+        <button mat-stroked-button (click)="prev()" [disabled]="(page$ | async) === 1">{{ 'common.prev' | translate }}</button>
+        <button mat-stroked-button (click)="next()" [disabled]="disableNext()">{{ 'common.next' | translate }}</button>
       </div>
 
       <div class="cards" *ngIf="items$ | async as items">
@@ -138,35 +159,35 @@ import { Subscription } from 'rxjs';
           <div class="grid">
             <div class="due-wrap">
               <mat-form-field appearance="outline" class="due-date">
-                <mat-label>Due date</mat-label>
+                <mat-label>{{ 'common.dueDate' | translate }}</mat-label>
                 <input matInput [matDatepicker]="picker" [value]="toDateObj(t.dueDate)" (dateChange)="onDueDateChange(t, $event)">
                 <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                 <mat-datepicker #picker></mat-datepicker>
               </mat-form-field>
               <mat-form-field appearance="outline" class="due-time">
-                <mat-label>Time</mat-label>
+                <mat-label>{{ 'common.time' | translate }}</mat-label>
                 <input matInput type="time" [value]="toTime(t.dueDate)" (change)="onDueTimeChange(t, $event)">
               </mat-form-field>
             </div>
 
             <mat-form-field appearance="outline">
-              <mat-label>Status</mat-label>
+              <mat-label>{{ 'common.status' | translate }}</mat-label>
               <mat-select [value]="t.status" (valueChange)="update(t, { status: $event })">
-                <mat-option value="todo">To Do</mat-option>
-                <mat-option value="in-progress">In Progress</mat-option>
-                <mat-option value="done">Done</mat-option>
+                <mat-option value="todo">{{ 'status.todo' | translate }}</mat-option>
+                <mat-option value="in-progress">{{ 'status.inProgress' | translate }}</mat-option>
+                <mat-option value="done">{{ 'status.done' | translate }}</mat-option>
               </mat-select>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Categories</mat-label>
+              <mat-label>{{ 'common.categories' | translate }}</mat-label>
               <mat-select [value]="t.categories || (t.category ? [t.category] : [])" multiple (valueChange)="updateCategories(t, $event)">
                 <mat-option *ngFor="let c of categories$ | async" [value]="c">{{ c }}</mat-option>
               </mat-select>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Tags</mat-label>
+              <mat-label>{{ 'common.tags' | translate }}</mat-label>
               <mat-select [value]="t.tags" multiple (valueChange)="update(t, { tags: $event })">
                 <mat-option *ngFor="let tag of tags$ | async" [value]="tag">{{ tag }}</mat-option>
               </mat-select>
@@ -178,20 +199,20 @@ import { Subscription } from 'rxjs';
               <span class="chip" *ngFor="let c of (t.categories || (t.category ? [t.category] : []))">{{ c }}</span>
             </div>
             <div class="actions">
-              <button mat-stroked-button color="primary" [routerLink]="['/tasks', t.id]">Edit</button>
+              <button mat-stroked-button color="primary" [routerLink]="['/tasks', t.id]">{{ 'common.edit' | translate }}</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="loading" *ngIf="loading$ | async">Loading…</div>
+      <div class="loading" *ngIf="loading$ | async">{{ 'common.loading' | translate }}</div>
     </div>
   `,
   styles: [`
     .wrap { max-width: 1200px; margin: 16px auto; padding: 0 16px; display: grid; gap: 14px; }
     .filters-header { display: flex; align-items: center; gap: 10px; }
     .filters-toggle { display: inline-flex; align-items: center; gap: 6px; }
-    .filters { display: grid; grid-template-columns: 180px 160px 240px 240px minmax(320px,1fr) auto auto; gap: 10px; align-items: end; }
+    .filters { display: grid; grid-template-columns: 180px 160px 240px 240px minmax(320px,1fr) 180px 140px; gap: 10px; align-items: end; }
     .filters-collapsible.collapsed { display: none; }
     .range-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 10px; }
     .range { display: grid; grid-template-columns: 1fr 140px; gap: 10px; align-items: center; }
@@ -260,6 +281,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
     categories: [[] as string[]],
     tags: [[] as string[]],
     q: [''],
+    sortBy: ['createdAt'],
+    sortDir: ['desc'],
     dueFromDate: [null as Date | null],
     dueFromTime: [''],
     dueToDate: [null as Date | null],
@@ -284,6 +307,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
         categories: catsArr,
         tags: tagsArr,
         q: p['q'] || '',
+        sortBy: p['sortBy'] || 'createdAt',
+        sortDir: p['sortDir'] || 'desc',
         dueFromDate: fromD,
         dueFromTime: fromD ? this.toTime(dueFromIso) : '',
         dueToDate: toD,
@@ -295,6 +320,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
         category: catsArr.join(','),
         tags: tagsArr.join(','),
         q: p['q'] || '',
+        sortBy: p['sortBy'] || 'createdAt',
+        sortDir: p['sortDir'] || 'desc',
         dueFrom: dueFromIso || '',
         dueTo: dueToIso || '',
         excludeDone: p['excludeDone'] || '',
@@ -321,6 +348,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
       category: (v.categories || []).join(','),
       tags: (v.tags || []).join(','),
       q: v.q || '',
+      sortBy: v.sortBy || 'createdAt',
+      sortDir: v.sortDir || 'desc',
       dueFrom: this.combine(v.dueFromDate || null, v.dueFromTime || ''),
       dueTo: this.combine(v.dueToDate || null, v.dueToTime || ''),
       page: 1,
@@ -331,8 +360,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
   }
 
   reset() {
-    this.form.reset({ status: '', priority: '', categories: [], tags: [], q: '', dueFromDate: null, dueFromTime: '', dueToDate: null, dueToTime: '' });
-    this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, pageSize: this.pageSize() } });
+    this.form.reset({ status: '', priority: '', categories: [], tags: [], q: '', sortBy: 'createdAt', sortDir: 'desc', dueFromDate: null, dueFromTime: '', dueToDate: null, dueToTime: '' });
+    this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, pageSize: this.pageSize(), sortBy: 'createdAt', sortDir: 'desc' } });
   }
 
   prev() {
@@ -434,9 +463,9 @@ export class TaskListComponent implements OnInit, OnDestroy {
     const pad = (n: number) => String(n).padStart(2, '0');
     const hh = pad(d.getHours());
     const mm = pad(d.getMinutes());
-    if (diff === 0) return `Today ${hh}:${mm}`;
-    if (diff === 1) return `Tomorrow ${hh}:${mm}`;
-    if (diff === -1) return `Yesterday ${hh}:${mm}`;
+    if (diff === 0) return `${'Today'} ${hh}:${mm}`;
+    if (diff === 1) return `${'Tomorrow'} ${hh}:${mm}`;
+    if (diff === -1) return `${'Yesterday'} ${hh}:${mm}`;
     return `${d.toLocaleDateString()} ${hh}:${mm}`;
   }
 }

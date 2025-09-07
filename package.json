@@ -27,6 +27,8 @@
     "@ngrx/router-store": "^18.1.1",
     "@ngrx/store": "^18.1.1",
     "@ngrx/store-devtools": "^18.1.1",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
     "body-parser": "^2.2.0",

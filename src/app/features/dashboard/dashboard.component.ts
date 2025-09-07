@@ -1,3 +1,4 @@
+// src/app/features/dashboard/dashboard.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
@@ -11,18 +12,19 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatIconModule, MatDividerModule, MatButtonModule, MatTooltipModule],
+  imports: [CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatIconModule, MatDividerModule, MatButtonModule, MatTooltipModule, TranslateModule],
   template: `
     <div class="wrap">
       <div class="header">
-        <h1>Dashboard</h1>
+        <h1>{{ 'dashboard.h1' | translate }}</h1>
         <button mat-stroked-button color="primary" (click)="reload()" [disabled]="loading$ | async">
           <mat-icon>refresh</mat-icon>
-          Refresh
+          {{ 'dashboard.refresh' | translate }}
         </button>
       </div>
 
@@ -31,38 +33,38 @@ import { Router } from '@angular/router';
       <mat-card *ngIf="stats$ | async as s" class="card kpi-card">
         <div class="kpi-grid">
           <button class="kpi btn" (click)="goToTasks({})">
-            <div class="kpi-title">Total</div>
+            <div class="kpi-title">{{ 'dashboard.total' | translate }}</div>
             <div class="kpi-value">{{ s.total }}</div>
           </button>
           <button class="kpi btn" (click)="goToTasks({ status: 'todo' })">
-            <div class="kpi-title">To Do</div>
+            <div class="kpi-title">{{ 'status.todo' | translate }}</div>
             <div class="kpi-value">{{ s.byStatus?.['todo'] || 0 }}</div>
           </button>
           <button class="kpi btn" (click)="goToTasks({ status: 'in-progress' })">
-            <div class="kpi-title">In Progress</div>
+            <div class="kpi-title">{{ 'status.inProgress' | translate }}</div>
             <div class="kpi-value">{{ s.byStatus?.['in-progress'] || 0 }}</div>
           </button>
           <button class="kpi btn" (click)="goToTasks({ status: 'done' })">
-            <div class="kpi-title">Done</div>
+            <div class="kpi-title">{{ 'status.done' | translate }}</div>
             <div class="kpi-value">{{ s.byStatus?.['done'] || 0 }}</div>
           </button>
           <button class="kpi btn alert" (click)="goToOverdue()">
-            <div class="kpi-title">Overdue</div>
+            <div class="kpi-title">{{ 'dashboard.overdue' | translate }}</div>
             <div class="kpi-value">{{ s.overdue }}</div>
           </button>
           <button class="kpi btn" (click)="goToToday()">
-            <div class="kpi-title">Due Today</div>
+            <div class="kpi-title">{{ 'dashboard.dueToday' | translate }}</div>
             <div class="kpi-value">{{ s.dueToday }}</div>
           </button>
           <button class="kpi btn" (click)="goToNext7()">
-            <div class="kpi-title">Next 7 Days</div>
+            <div class="kpi-title">{{ 'dashboard.next7' | translate }}</div>
             <div class="kpi-value">{{ s.upcoming7Days }}</div>
           </button>
           <div class="kpi progress" [matTooltip]="s.completionRate + '%'">
             <div class="ring" [style.background]="ringBg(s.completionRate)">
               <div class="ring-center">
                 <div class="kpi-value">{{ s.completionRate }}%</div>
-                <div class="kpi-title">Completion</div>
+                <div class="kpi-title">{{ 'dashboard.completion' | translate }}</div>
               </div>
             </div>
           </div>
@@ -71,37 +73,37 @@ import { Router } from '@angular/router';
 
       <div class="grid" *ngIf="stats$ | async as s">
         <mat-card class="card">
-          <div class="card-title">Status</div>
+          <div class="card-title">{{ 'dashboard.status' | translate }}</div>
           <div class="bar clickable" *ngFor="let k of statusKeys" (click)="goToTasks({ status: k })">
-            <div class="bar-label">{{ k }}</div>
+            <div class="bar-label">{{ ('status.' + statusKeyMap[k]) | translate }}</div>
             <mat-progress-bar mode="determinate" [value]="percent(s.byStatus?.[k] || 0, s.total)"></mat-progress-bar>
             <div class="bar-value">{{ s.byStatus?.[k] || 0 }}</div>
           </div>
         </mat-card>
 
         <mat-card class="card">
-          <div class="card-title">Priority</div>
+          <div class="card-title">{{ 'dashboard.priority' | translate }}</div>
           <div class="bar clickable" *ngFor="let k of priorityKeys" (click)="goToTasks({ priority: k })">
-            <div class="bar-label">{{ k }}</div>
+            <div class="bar-label">{{ ('priority.' + k) | translate }}</div>
             <mat-progress-bar mode="determinate" [value]="percent(s.byPriority?.[k] || 0, s.total)"></mat-progress-bar>
             <div class="bar-value">{{ s.byPriority?.[k] || 0 }}</div>
           </div>
         </mat-card>
 
         <mat-card class="card">
-          <div class="card-title">Categories</div>
+          <div class="card-title">{{ 'dashboard.categories' | translate }}</div>
           <div class="chip-wrap" *ngIf="categoryList(s) as cats; else noCat">
             <mat-chip-set>
-              <mat-chip *ngFor="let c of cats | slice:0:12" matTooltip="{{ s.byCategory[c] }} tasks" (click)="goToTasks({ category: c })">
+              <mat-chip *ngFor="let c of cats | slice:0:12" matTooltip="{{ s.byCategory[c] }} {{ 'dashboard.tasks' | translate }}" (click)="goToTasks({ category: c })">
                 {{ c }} ({{ s.byCategory[c] }})
               </mat-chip>
             </mat-chip-set>
           </div>
           <ng-template #noCat>
-            <div class="muted">No categories yet</div>
+            <div class="muted">{{ 'dashboard.noCategories' | translate }}</div>
           </ng-template>
           <mat-divider></mat-divider>
-          <div class="card-title small">Top Tags</div>
+          <div class="card-title small">{{ 'dashboard.topTags' | translate }}</div>
           <div class="chip-wrap" *ngIf="s.topTags?.length; else noTags">
             <mat-chip-set>
               <mat-chip *ngFor="let t of s.topTags; trackBy: tagTrack" (click)="goToTasks({ q: t.tag })">
@@ -110,7 +112,7 @@ import { Router } from '@angular/router';
             </mat-chip-set>
           </div>
           <ng-template #noTags>
-            <div class="muted">No tags yet</div>
+            <div class="muted">{{ 'dashboard.noTags' | translate }}</div>
           </ng-template>
         </mat-card>
       </div>
@@ -154,6 +156,7 @@ export class DashboardComponent {
   stats$ = this.store.select(selectStats);
   loading$ = this.store.select(selectTasksLoading);
   statusKeys = ['todo', 'in-progress', 'done'];
+  statusKeyMap: any = { 'todo': 'todo', 'in-progress': 'inProgress', 'done': 'done' };
   priorityKeys = ['low', 'medium', 'high'];
 
   constructor() {

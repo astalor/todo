@@ -1,35 +1,35 @@
-import { Component, effect, inject } from '@angular/core';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+// src/app/app.component.ts
+import { Component, inject, OnInit } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { HeaderComponent } from './layout/header.component';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
-import { selectAuthError } from './store/auth/auth.selectors';
 import { AuthActions } from './store/auth/auth.actions';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
-  selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, HeaderComponent, MatSnackBarModule],
+  selector: 'app-root',
+  imports: [CommonModule, RouterOutlet, HeaderComponent, MatSnackBarModule, TranslateModule],
   template: `
     <app-header></app-header>
-    <router-outlet />
+    <router-outlet></router-outlet>
   `
 })
-export class AppComponent {
-  private store = inject(Store);
+export class AppComponent implements OnInit {
   private snack = inject(MatSnackBar);
-  private router = inject(Router);
-  constructor() {
-    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('tm_token') : null;
-    if (token) this.store.dispatch(AuthActions.loadMe());
-    this.router.events.subscribe(e => {
-      if (e instanceof NavigationEnd) window.scrollTo(0, 0);
-    });
-    effect(() => {
-      this.store.select(selectAuthError).subscribe((err: string | null) => {
-        if (err) this.snack.open(err, 'Close', { duration: 3000 });
-      });
+  private store = inject(Store);
+  private i18n = inject(TranslateService);
+
+  ngOnInit() {
+    const lang = localStorage.getItem('lang') || 'en';
+    this.i18n.setDefaultLang('en');
+    this.i18n.use(lang);
+    this.store.dispatch(AuthActions.loadMe());
+    window.addEventListener('unhandledrejection', e => {
+      const msg = (e.reason && (e.reason.error?.message || e.reason.message)) || 'Error';
+      this.snack.open(msg, this.i18n.instant('common.close'), { duration: 3000 });
     });
   }
 }
