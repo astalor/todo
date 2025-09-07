@@ -1,4 +1,5 @@
 {
+  "nav": { "dashboard": "Dashboard", "tasks": "Tasks" },
   "auth": {
     "login": "Login",
     "register": "Register",

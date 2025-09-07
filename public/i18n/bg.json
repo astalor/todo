@@ -1,4 +1,5 @@
 {
+  "nav": { "dashboard": "Табло", "tasks": "Задачи" },
   "auth": {
     "login": "Вход",
     "register": "Регистрация",
