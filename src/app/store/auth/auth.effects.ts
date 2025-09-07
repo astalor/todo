@@ -39,8 +39,8 @@ export class AuthEffects {
     this.actions$.pipe(
       ofType(AuthActions.loginSuccess, AuthActions.registerSuccess),
       tap(({ token }) => {
-        localStorage.setItem('tm_token', token);
-        this.router.navigateByUrl('/');
+        localStorage.setItem('token', token);
+        this.router.navigateByUrl('/dashboard');
       })
     ), { dispatch: false }
   );
@@ -61,7 +61,7 @@ export class AuthEffects {
     this.actions$.pipe(
       ofType(AuthActions.loadMeFailure),
       tap(() => {
-        localStorage.removeItem('tm_token');
+        localStorage.removeItem('token');
       }),
       map(() => AuthActions.logout())
     )
@@ -71,7 +71,7 @@ export class AuthEffects {
     this.actions$.pipe(
       ofType(AuthActions.logout),
       tap(() => {
-        localStorage.removeItem('tm_token');
+        localStorage.removeItem('token');
         this.auth.logout();
         this.router.navigateByUrl('/login');
       })

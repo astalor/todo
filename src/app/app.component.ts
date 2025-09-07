@@ -1,35 +1,40 @@
-// src/app/app.component.ts
-import { Component, inject, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './layout/header.component';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
-import { AuthActions } from './store/auth/auth.actions';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { selectAuthError } from './store/auth/auth.selectors';
+import { routeTransition } from './shared/animations';
+import { filter } from 'rxjs/operators';
 
 @Component({
   standalone: true,
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, HeaderComponent, MatSnackBarModule, TranslateModule],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, MatSnackBarModule],
+  animations: [routeTransition],
   template: `
-    <app-header></app-header>
-    <router-outlet></router-outlet>
-  `
+    <div class="shell">
+      <app-header></app-header>
+      <main class="view" [@routeTransition]="animKey">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
+  `,
+  styles: [`
+    .shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+    .view { position: relative; padding: 12px; overflow: hidden; }
+  `]
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   private snack = inject(MatSnackBar);
   private store = inject(Store);
-  private i18n = inject(TranslateService);
+  private router = inject(Router);
+  animKey = '';
 
-  ngOnInit() {
-    const lang = localStorage.getItem('lang') || 'en';
-    this.i18n.setDefaultLang('en');
-    this.i18n.use(lang);
-    this.store.dispatch(AuthActions.loadMe());
-    window.addEventListener('unhandledrejection', e => {
-      const msg = (e.reason && (e.reason.error?.message || e.reason.message)) || 'Error';
-      this.snack.open(msg, this.i18n.instant('common.close'), { duration: 3000 });
-    });
+  constructor() {
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => this.animKey = e.urlAfterRedirects || e.url);
+    this.store.select(selectAuthError).subscribe(err => { if (err) this.snack.open(err, 'Close', { duration: 3000 }); });
+    this.store.select((s: any) => s.tasks?.error).subscribe(err => { if (err) this.snack.open(err, 'Close', { duration: 3000 }); });
   }
 }

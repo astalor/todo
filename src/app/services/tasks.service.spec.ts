@@ -90,7 +90,7 @@ describe('TasksService', () => {
   it('stats returns object', () => {
     let res: any;
     api.stats().subscribe(r => (res = r));
-    const req = http.expectOne('/api/tasks/stats');
+    const req = http.expectOne('/api/stats');
     expect(req.request.method).toBe('GET');
     req.flush({ total: 1, byStatus: {} });
     expect(res.total).toBe(1);

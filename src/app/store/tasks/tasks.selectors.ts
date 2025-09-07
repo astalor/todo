@@ -5,6 +5,7 @@ import { TasksState } from './tasks.reducer';
 export const selectTasksState = createFeatureSelector<TasksState>('tasks');
 
 export const selectTasksLoading = createSelector(selectTasksState, s => s.loading);
+export const selectTasksError = createSelector(selectTasksState, s => s.error ?? null);
 export const selectTasksPage = createSelector(selectTasksState, s => s.page);
 export const selectTasksPageSize = createSelector(selectTasksState, s => s.pageSize);
 export const selectTasksTotal = createSelector(selectTasksState, s => s.total);
@@ -19,6 +20,7 @@ export const selectAllTasks = createSelector(selectTasksState, s => {
   return ids.map(id => s.entities[id]).filter(Boolean) as any[];
 });
 
+export const selectTasks = selectAllTasks;
 export const selectTaskCategories = selectCategories;
 export const selectTaskTags = selectTags;
 export const selectTasksLastQuery = selectLastQuery;

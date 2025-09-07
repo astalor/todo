@@ -43,7 +43,7 @@ export class TasksService {
   }
 
   stats(): Observable<any> {
-    return this.http.get<any>('/api/tasks/stats');
+    return this.http.get<any>('/api/stats');
   }
 
   categories(): Observable<{ categories: string[] }> {
