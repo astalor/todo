@@ -46,7 +46,8 @@ export const tasksReducer = createReducer(
   on(TasksActions.deleteSuccess, (state, { id }) => adapter.removeOne(id, { ...state })),
   on(TasksActions.loadCategoriesSuccess, (state, { categories }) => ({ ...state, categories })),
   on(TasksActions.loadTagsSuccess, (state, { tags }) => ({ ...state, tags })),
-  on(TasksActions.loadStatsSuccess, (state, { stats }) => ({ ...state, stats })),
+  on(TasksActions.loadStats, (state) => ({ ...state, loading: true })),
+  on(TasksActions.loadStatsSuccess, (state, { stats }) => ({ ...state, stats, loading: false })),
   on(
     TasksActions.createFailure,
     TasksActions.updateFailure,
@@ -54,7 +55,7 @@ export const tasksReducer = createReducer(
     TasksActions.loadCategoriesFailure,
     TasksActions.loadTagsFailure,
     TasksActions.loadStatsFailure,
-    (state, { error }) => ({ ...state, error })
+    (state, { error }) => ({ ...state, loading: false, error })
   )
 );
 
