@@ -261,8 +261,9 @@ app.get('/api/tasks/:id', authMiddleware, (req, res) => {
   res.json(t);
 });
 
-app.put('/api/tasks/:id', authMiddleware, (req, res) => {
+app.patch('/api/tasks/:id', authMiddleware, (req, res) => {
   const taskId = String(req.params.id);
+  console.log('SELECT * FROM tasks WHERE id=? AND ownerId=?', taskId, req.user.sub);
   const existing = db.prepare('SELECT * FROM tasks WHERE id=? AND ownerId=?').get(taskId, req.user.sub);
   if (!existing) return res.status(404).json({ message: 'Task not found' });
   const allowed = ['title', 'description', 'status', 'priority', 'category', 'categories', 'tags', 'dueDate'];
@@ -383,5 +384,4 @@ app.post('/api/public/seed-by-email', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[dev-api] listening on http://localhost:${PORT}`);
-  console.log(`Auth demo: POST /api/auth/login { email: "demo@demo.io", password: "demo123" }`);
 });

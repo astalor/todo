@@ -35,7 +35,7 @@ export class TasksService {
   }
 
   update(id: string, changes: Partial<Task>): Observable<Task> {
-    return this.http.patch<Task>(`/api/tasks/${id}`, changes);
+    return this.http.put<Task>(`/api/tasks/${id}`, changes);
   }
 
   delete(id: string): Observable<void> {
