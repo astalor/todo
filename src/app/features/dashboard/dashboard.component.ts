@@ -11,13 +11,13 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { fadeInOut, listStagger } from '../../shared/animations';
+import { elementSlide, listSlideStagger } from '../../shared/animations';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
   imports: [CommonModule, MatCardModule, MatProgressBarModule, MatChipsModule, MatIconModule, MatDividerModule, MatButtonModule, MatTooltipModule],
-  animations: [fadeInOut, listStagger],
+  animations: [elementSlide, listSlideStagger],
   template: `
     <div class="wrap">
       <div class="header">
@@ -28,10 +28,10 @@ import { fadeInOut, listStagger } from '../../shared/animations';
         </button>
       </div>
 
-      <mat-progress-bar mode="indeterminate" *ngIf="loading$ | async" @fadeInOut></mat-progress-bar>
+      <mat-progress-bar mode="indeterminate" *ngIf="loading$ | async" @elementSlide></mat-progress-bar>
 
-      <mat-card *ngIf="stats$ | async as s" class="card kpi-card" @fadeInOut>
-        <div class="kpi-grid" [@listStagger]>
+      <mat-card *ngIf="stats$ | async as s" class="card kpi-card" @elementSlide>
+        <div class="kpi-grid" [@listSlideStagger]>
           <button class="kpi btn" (click)="goToTasks({})">
             <div class="kpi-title">Total</div>
             <div class="kpi-value">{{ s.total }}</div>
@@ -71,7 +71,7 @@ import { fadeInOut, listStagger } from '../../shared/animations';
         </div>
       </mat-card>
 
-      <div class="grid" *ngIf="stats$ | async as s" [@listStagger]>
+      <div class="grid" *ngIf="stats$ | async as s" [@listSlideStagger]>
         <mat-card class="card">
           <div class="card-title">Status</div>
           <div class="bar clickable" *ngFor="let k of statusKeys" (click)="goToTasks({ status: k })">

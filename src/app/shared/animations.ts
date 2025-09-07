@@ -1,59 +1,63 @@
-import { animate, group, query, stagger, state, style, transition, trigger } from '@angular/animations';
+// src/app/shared/animations.ts
+import { trigger, transition, style, query, group, animate, stagger, animateChild } from '@angular/animations';
 
-const fast = 180;
-const normal = 240;
-const slow = 320;
-
-export const routeTransition = trigger('routeTransition', [
+export const routeSlide = trigger('routeSlide', [
   transition('* <=> *', [
-    query(':enter, :leave', style({ position: 'absolute', top: 0, left: 0, width: '100%' }), { optional: true }),
+    query(':enter, :leave', [style({ position: 'absolute', left: 0, top: 0, width: '100%' })], { optional: true }),
     group([
-      query(':leave', [
-        style({ opacity: 1, transform: 'translateY(0px)' }),
-        animate(`${normal}ms ease`, style({ opacity: 0, transform: 'translateY(8px)' }))
-      ], { optional: true }),
       query(':enter', [
-        style({ opacity: 0, transform: 'translateY(-8px)' }),
-        animate(`${normal}ms ease`, style({ opacity: 1, transform: 'translateY(0px)' }))
+        style({ transform: 'translateX(24px)' }),
+        animate('220ms cubic-bezier(0.2,0,0,1)', style({ transform: 'translateX(0)' })),
+        query('@*', animateChild(), { optional: true })
+      ], { optional: true }),
+      query(':leave', [
+        style({ transform: 'translateX(0)' }),
+        animate('180ms cubic-bezier(0.4,0,1,1)', style({ transform: 'translateX(-24px)' }))
       ], { optional: true })
     ])
   ])
 ]);
 
-export const listStagger = trigger('listStagger', [
+export const routeScale = trigger('routeScale', [
+  transition('* <=> *', [
+    query(':enter, :leave', [style({ position: 'absolute', left: 0, top: 0, width: '100%' })], { optional: true }),
+    group([
+      query(':enter', [
+        style({ transform: 'scale(0.98)' }),
+        animate('200ms cubic-bezier(0.2,0,0,1)', style({ transform: 'scale(1)' }))
+      ], { optional: true }),
+      query(':leave', [
+        style({ transform: 'scale(1)' }),
+        animate('180ms cubic-bezier(0.4,0,1,1)', style({ transform: 'scale(0.98)' }))
+      ], { optional: true })
+    ])
+  ])
+]);
+
+export const elementSlide = trigger('elementSlide', [
+  transition(':enter', [
+    style({ transform: 'translateY(6px)' }),
+    animate('150ms cubic-bezier(0.2,0,0,1)', style({ transform: 'translateY(0)' }))
+  ]),
+  transition(':leave', [
+    animate('120ms cubic-bezier(0.4,0,1,1)', style({ transform: 'translateY(-6px)' }))
+  ])
+]);
+
+export const listSlideStagger = trigger('listSlideStagger', [
   transition('* <=> *', [
     query(':enter', [
-      style({ opacity: 0, transform: 'translateY(6px)' }),
-      stagger(40, animate(`${fast}ms ease-out`, style({ opacity: 1, transform: 'translateY(0)' })))
-    ], { optional: true }),
-    query(':leave', [
-      stagger(20, animate(`${fast}ms ease-in`, style({ opacity: 0, transform: 'translateY(6px)' })))
+      style({ transform: 'translateY(8px)' }),
+      stagger(40, animate('180ms cubic-bezier(0.2,0,0,1)', style({ transform: 'translateY(0)' })))
     ], { optional: true })
   ])
 ]);
 
-export const expandCollapse = trigger('expandCollapse', [
-  state('collapsed', style({ height: '0px', opacity: 0, overflow: 'hidden', transform: 'scaleY(.98)' })),
-  state('expanded', style({ height: '*', opacity: 1, overflow: 'hidden', transform: 'scaleY(1)' })),
-  transition('collapsed <=> expanded', animate(`${slow}ms cubic-bezier(.2,.8,.2,1)`))
+export const slideToggle = trigger('slideToggle', [
+  transition(':enter', [style({ height: 0, overflow: 'hidden' }), animate('160ms ease-out', style({ height: '*' }))]),
+  transition(':leave', [style({ overflow: 'hidden' }), animate('130ms ease-in', style({ height: 0 }))])
 ]);
 
-export const fadeInOut = trigger('fadeInOut', [
-  transition(':enter', [
-    style({ opacity: 0 }),
-    animate(`${fast}ms ease-out`, style({ opacity: 1 }))
-  ]),
-  transition(':leave', [
-    animate(`${fast}ms ease-in`, style({ opacity: 0 }))
-  ])
-]);
-
-export const chipPulse = trigger('chipPulse', [
-  transition(':enter', [
-    style({ transform: 'scale(.9)', opacity: 0 }),
-    animate(`${fast}ms ease-out`, style({ transform: 'scale(1)', opacity: 1 }))
-  ]),
-  transition(':leave', [
-    animate(`${fast}ms ease-in`, style({ transform: 'scale(.9)', opacity: 0 }))
-  ])
-]);
+export const routeTransition = routeSlide;
+export const fadeInOut = elementSlide;
+export const listStagger = listSlideStagger;

@@ -47,10 +47,10 @@ export class TasksService {
   }
 
   categories(): Observable<{ categories: string[] }> {
-    return this.http.get<{ categories: string[] }>('/api/tasks/categories');
+    return this.http.get<{ categories: string[] }>('/api/meta/categories');
   }
 
   tags(): Observable<{ tags: string[] }> {
-    return this.http.get<{ tags: string[] }>('/api/tasks/tags');
+    return this.http.get<{ tags: string[] }>('/api/meta/tags');
   }
 }
