@@ -5,6 +5,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { selectAuthError } from './store/auth/auth.selectors';
+import { AuthActions } from './store/auth/auth.actions';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,8 @@ export class AppComponent {
   private snack = inject(MatSnackBar);
   private router = inject(Router);
   constructor() {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('tm_token') : null;
+    if (token) this.store.dispatch(AuthActions.loadMe());
     this.router.events.subscribe(e => {
       if (e instanceof NavigationEnd) window.scrollTo(0, 0);
     });

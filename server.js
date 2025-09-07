@@ -5,6 +5,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { faker } = require('@faker-js/faker');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
+const Database = require('better-sqlite3');
 
 const app = express();
 app.use(cors());
@@ -13,12 +16,38 @@ app.use(bodyParser.json());
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_super_secret_change_me';
 const TOKEN_EXPIRES_IN = '2h';
+const DATA_DIR = path.join(process.cwd(), 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const db = new Database(path.join(DATA_DIR, 'app.db'));
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  passwordHash TEXT NOT NULL,
+  createdAt TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL,
+  priority TEXT NOT NULL,
+  category TEXT,
+  tags TEXT,
+  dueDate TEXT,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL,
+  ownerId TEXT NOT NULL,
+  FOREIGN KEY(ownerId) REFERENCES users(id)
+);
+`);
 
 const PRIORITIES = ['low', 'medium', 'high'];
 const STATUSES = ['todo', 'in-progress', 'done'];
 const CATEGORIES = ['work', 'personal', 'learning', 'home', 'health', 'finance'];
-
-const db = { users: [], tasks: [] };
+const SORT_KEYS = new Set(['title', 'priority', 'status', 'dueDate', 'createdAt']);
 
 function signToken(user) {
   return jwt.sign({ sub: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN });
@@ -37,135 +66,121 @@ function authMiddleware(req, res, next) {
   }
 }
 
+function userByEmail(email) {
+  return db.prepare('SELECT id, email, name, passwordHash, createdAt FROM users WHERE lower(email)=lower(?)').get(email);
+}
+
+function insertUser(u) {
+  db.prepare('INSERT INTO users(id,email,name,passwordHash,createdAt) VALUES (?,?,?,?,?)').run(u.id, u.email, u.name, u.passwordHash, u.createdAt);
+}
+
 function seedTasks(count, ownerId) {
-  const tasks = [];
   const now = Date.now();
-  for (let i = 0; i < count; i++) {
-    const createdAt = new Date(now - faker.number.int({ min: 0, max: 30 }) * 86400000);
-    const dueOffsetDays = faker.number.int({ min: -10, max: 30 });
-    const dueDate = new Date(createdAt.getTime() + dueOffsetDays * 86400000);
-    tasks.push({
-      id: uuidv4(),
-      title: faker.hacker.phrase(),
-      description: faker.lorem.sentences({ min: 1, max: 3 }),
-      status: faker.helpers.arrayElement(STATUSES),
-      priority: faker.helpers.arrayElement(PRIORITIES),
-      category: faker.helpers.arrayElement(CATEGORIES),
-      tags: faker.helpers.arrayElements(['angular', 'ngrx', 'testing', 'bug', 'feature', 'chore', 'docs'], { min: 0, max: 3 }),
-      dueDate: dueDate.toISOString(),
-      createdAt: createdAt.toISOString(),
-      updatedAt: createdAt.toISOString(),
-      ownerId
-    });
+  const ins = db.prepare(`INSERT INTO tasks(id,title,description,status,priority,category,tags,dueDate,createdAt,updatedAt,ownerId)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
+  const trx = db.transaction((n) => {
+    for (let i = 0; i < n; i++) {
+      const createdAt = new Date(now - faker.number.int({ min: 0, max: 30 }) * 86400000);
+      const dueOffsetDays = faker.number.int({ min: -10, max: 30 });
+      const dueDate = new Date(createdAt.getTime() + dueOffsetDays * 86400000);
+      ins.run(
+        uuidv4(),
+        faker.hacker.phrase(),
+        faker.lorem.sentences({ min: 1, max: 3 }),
+        faker.helpers.arrayElement(STATUSES),
+        faker.helpers.arrayElement(PRIORITIES),
+        faker.helpers.arrayElement(CATEGORIES),
+        JSON.stringify(faker.helpers.arrayElements(['angular', 'ngrx', 'testing', 'bug', 'feature', 'chore', 'docs'], { min: 0, max: 3 })),
+        dueDate.toISOString(),
+        createdAt.toISOString(),
+        createdAt.toISOString(),
+        ownerId
+      );
+    }
+  });
+  trx(count);
+}
+
+function ensureDemo() {
+  const existing = userByEmail('demo@demo.io');
+  if (!existing) {
+    const hash = bcrypt.hashSync('demo123', 10);
+    const u = { id: uuidv4(), email: 'demo@demo.io', name: 'Demo User', passwordHash: hash, createdAt: new Date().toISOString() };
+    insertUser(u);
+    seedTasks(400, u.id);
   }
-  return tasks;
 }
-
-function distinct(values) {
-  return Array.from(new Set(values)).filter(v => v != null);
-}
-
-function ensureSeedForUser(userId, n = 400) {
-  if (!db.tasks.some(t => t.ownerId === userId)) {
-    db.tasks = db.tasks.concat(seedTasks(n, userId));
-  }
-}
-
-(function bootstrap() {
-  const hash = bcrypt.hashSync('demo123', 10);
-  const demoUser = { id: uuidv4(), email: 'demo@demo.io', name: 'Demo User', passwordHash: hash, createdAt: new Date().toISOString() };
-  db.users.push(demoUser);
-  db.tasks = seedTasks(400, demoUser.id);
-})();
-
-app.post('/api/public/seed-by-email', (req, res) => {
-  const { email, n } = req.body || {};
-  if (!email) return res.status(400).json({ message: 'email required' });
-  const user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  const count = parseInt(n, 10) || 400;
-  const before = db.tasks.filter(t => t.ownerId === user.id).length;
-  db.tasks = db.tasks.filter(t => t.ownerId !== user.id).concat(seedTasks(count, user.id));
-  const after = db.tasks.filter(t => t.ownerId === user.id).length;
-  res.json({ seeded: count, userId: user.id, email: user.email, before, after });
-});
+ensureDemo();
 
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name } = req.body || {};
   if (!email || !password || !name) return res.status(400).json({ message: 'name, email and password are required' });
-  if (db.users.some(u => u.email.toLowerCase() === String(email).toLowerCase())) return res.status(409).json({ message: 'Email already exists' });
+  if (userByEmail(email)) return res.status(409).json({ message: 'Email already exists' });
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = { id: uuidv4(), email, name, passwordHash, createdAt: new Date().toISOString() };
-  db.users.push(user);
-  const token = signToken(user);
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  const u = { id: uuidv4(), email, name, passwordHash, createdAt: new Date().toISOString() };
+  insertUser(u);
+  const token = signToken(u);
+  res.json({ token, user: { id: u.id, email: u.email, name: u.name } });
 });
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body || {};
-  const user = db.users.find(u => u.email.toLowerCase() === String(email || '').toLowerCase());
-  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
-  const ok = await bcrypt.compare(password || '', user.passwordHash);
+  const u = userByEmail(email || '');
+  if (!u) return res.status(401).json({ message: 'Invalid credentials' });
+  const ok = await bcrypt.compare(password || '', u.passwordHash);
   if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-  const token = signToken(user);
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  const token = signToken(u);
+  res.json({ token, user: { id: u.id, email: u.email, name: u.name } });
 });
 
 app.get('/api/auth/me', authMiddleware, (req, res) => {
-  const user = db.users.find(u => u.id === req.user.sub);
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  res.json({ id: user.id, email: user.email, name: user.name });
+  const u = db.prepare('SELECT id,email,name FROM users WHERE id=?').get(req.user.sub);
+  if (!u) return res.status(404).json({ message: 'User not found' });
+  res.json(u);
 });
 
 app.get('/api/tasks', authMiddleware, (req, res) => {
-  let {
-    page = '1',
-    pageSize = '20',
-    status,
-    priority,
-    category,
-    q,
-    dueFrom,
-    dueTo,
-    sortBy = 'createdAt',
-    sortDir = 'desc'
-  } = req.query;
+  let { page = '1', pageSize = '20', status, priority, category, q, dueFrom, dueTo, sortBy, sortDir } = req.query;
 
-  page = parseInt(page, 10) || 1;
-  pageSize = Math.min(100, parseInt(pageSize, 10) || 20);
-  sortDir = (String(sortDir).toLowerCase() === 'asc') ? 'asc' : 'desc';
+  const p = parseInt(String(page), 10); page = Number.isFinite(p) && p > 0 ? p : 1;
+  const ps = parseInt(String(pageSize), 10); pageSize = Number.isFinite(ps) && ps > 0 ? Math.min(ps, 100) : 20;
 
-  let items = db.tasks.filter(t => t.ownerId === req.user.sub);
+  const sortKey = SORT_KEYS.has(String(sortBy || '').trim()) ? String(sortBy).trim() : 'createdAt';
+  const dir = String(sortDir || '').trim().toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
-  if (status) items = items.filter(t => t.status === status);
-  if (priority) items = items.filter(t => t.priority === priority);
-  if (category) items = items.filter(t => t.category === category);
-  if (q) {
-    const s = String(q).toLowerCase();
-    items = items.filter(t => t.title.toLowerCase().includes(s) || (t.description || '').toLowerCase().includes(s));
+  const clauses = ['ownerId = ?'];
+  const params = [req.user.sub];
+
+  if (typeof status === 'string' && status.trim() !== '') { clauses.push('status = ?'); params.push(status); }
+  if (typeof priority === 'string' && priority.trim() !== '') { clauses.push('priority = ?'); params.push(priority); }
+  if (typeof category === 'string' && category.trim() !== '') { clauses.push('category = ?'); params.push(category); }
+  if (typeof q === 'string' && q.trim() !== '') {
+    const s = `%${q.toLowerCase()}%`;
+    clauses.push('(lower(title) LIKE ? OR lower(description) LIKE ?)');
+    params.push(s, s);
   }
-  if (dueFrom) {
-    const from = new Date(dueFrom).getTime();
-    items = items.filter(t => t.dueDate && new Date(t.dueDate).getTime() >= from);
-  }
-  if (dueTo) {
-    const to = new Date(dueTo).getTime();
-    items = items.filter(t => t.dueDate && new Date(t.dueDate).getTime() <= to);
-  }
+  if (typeof dueFrom === 'string' && dueFrom.trim() !== '') { clauses.push('dueDate >= ?'); params.push(new Date(dueFrom).toISOString()); }
+  if (typeof dueTo === 'string' && dueTo.trim() !== '') { clauses.push('dueDate <= ?'); params.push(new Date(dueTo).toISOString()); }
 
-  const validSort = new Set(['title', 'priority', 'status', 'dueDate', 'createdAt']);
-  if (!validSort.has(sortBy)) sortBy = 'createdAt';
-  items.sort((a, b) => {
-    const av = a[sortBy];
-    const bv = b[sortBy];
-    if (av === bv) return 0;
-    return (av > bv ? 1 : -1) * (sortDir === 'asc' ? 1 : -1);
-  });
+  const where = `WHERE ${clauses.join(' AND ')}`;
 
-  const total = items.length;
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const data = items.slice(start, end);
+  const total = db.prepare(`SELECT COUNT(*) AS c FROM tasks ${where}`).get(...params).c;
+
+  const orderSql = `
+    ORDER BY
+      CASE WHEN ?='title' THEN title END ${dir},
+      CASE WHEN ?='priority' THEN priority END ${dir},
+      CASE WHEN ?='status' THEN status END ${dir},
+      CASE WHEN ?='dueDate' THEN dueDate END ${dir},
+      CASE WHEN ?='createdAt' THEN createdAt END ${dir},
+      createdAt DESC
+  `;
+
+  const data = db.prepare(
+    `SELECT * FROM tasks ${where} ${orderSql} LIMIT ? OFFSET ?`
+  ).all(...params, sortKey, sortKey, sortKey, sortKey, sortKey, pageSize, (page - 1) * pageSize);
+
+  data.forEach(t => { t.tags = t.tags ? JSON.parse(t.tags) : []; });
 
   res.json({ page, pageSize, total, totalPages: Math.ceil(total / pageSize), data });
 });
@@ -175,114 +190,124 @@ app.post('/api/tasks', authMiddleware, (req, res) => {
   if (!title) return res.status(400).json({ message: 'title is required' });
   if (priority && !PRIORITIES.includes(priority)) return res.status(400).json({ message: 'invalid priority' });
   if (status && !STATUSES.includes(status)) return res.status(400).json({ message: 'invalid status' });
-
   const now = new Date().toISOString();
-  const task = {
-    id: uuidv4(),
-    title,
-    description: description || '',
-    status,
-    priority,
-    category: category || null,
-    tags: Array.isArray(tags) ? tags : [],
-    dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-    createdAt: now,
-    updatedAt: now,
-    ownerId: req.user.sub
-  };
-  db.tasks.unshift(task);
+  const id = uuidv4();
+  db.prepare(`INSERT INTO tasks(id,title,description,status,priority,category,tags,dueDate,createdAt,updatedAt,ownerId)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+    id, title, description || '', status, priority, category || null, JSON.stringify(Array.isArray(tags) ? tags : []),
+    dueDate ? new Date(dueDate).toISOString() : null, now, now, req.user.sub
+  );
+  const task = db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
+  task.tags = task.tags ? JSON.parse(task.tags) : [];
   res.status(201).json(task);
 });
 
 app.get('/api/tasks/:id', authMiddleware, (req, res) => {
-  const task = db.tasks.find(t => t.id === req.params.id && t.ownerId === req.user.sub);
-  if (!task) return res.status(404).json({ message: 'Task not found' });
-  res.json(task);
+  const t = db.prepare('SELECT * FROM tasks WHERE id=? AND ownerId=?').get(String(req.params.id), req.user.sub);
+  if (!t) return res.status(404).json({ message: 'Task not found' });
+  t.tags = t.tags ? JSON.parse(t.tags) : [];
+  res.json(t);
 });
 
 app.put('/api/tasks/:id', authMiddleware, (req, res) => {
-  const idx = db.tasks.findIndex(t => t.id === req.params.id && t.ownerId === req.user.sub);
-  if (idx < 0) return res.status(404).json({ message: 'Task not found' });
-
+  const taskId = String(req.params.id);
+  const existing = db.prepare('SELECT * FROM tasks WHERE id=? AND ownerId=?').get(taskId, req.user.sub);
+  if (!existing) return res.status(404).json({ message: 'Task not found' });
   const allowed = ['title', 'description', 'status', 'priority', 'category', 'tags', 'dueDate'];
-  const updated = { ...db.tasks[idx] };
-  for (const key of allowed) {
-    if (key in req.body) {
-      if (key === 'priority' && !PRIORITIES.includes(req.body[key])) return res.status(400).json({ message: 'invalid priority' });
-      if (key === 'status' && !STATUSES.includes(req.body[key])) return res.status(400).json({ message: 'invalid status' });
-      updated[key] = key === 'dueDate' && req.body[key] ? new Date(req.body[key]).toISOString() : req.body[key];
+  const updates = { ...existing };
+  for (const k of allowed) {
+    if (k in req.body) {
+      if (k === 'priority' && !PRIORITIES.includes(req.body[k])) return res.status(400).json({ message: 'invalid priority' });
+      if (k === 'status' && !STATUSES.includes(req.body[k])) return res.status(400).json({ message: 'invalid status' });
+      updates[k] = k === 'dueDate' && req.body[k] ? new Date(req.body[k]).toISOString() : k === 'tags' ? JSON.stringify(Array.isArray(req.body[k]) ? req.body[k] : []) : req.body[k];
     }
   }
-  updated.updatedAt = new Date().toISOString();
-  db.tasks[idx] = updated;
-  res.json(updated);
+  updates.updatedAt = new Date().toISOString();
+  db.prepare(`UPDATE tasks SET title=?,description=?,status=?,priority=?,category=?,tags=?,dueDate=?,updatedAt=? WHERE id=? AND ownerId=?`)
+    .run(updates.title, updates.description, updates.status, updates.priority, updates.category, updates.tags, updates.dueDate, updates.updatedAt, taskId, req.user.sub);
+  const t = db.prepare('SELECT * FROM tasks WHERE id=?').get(taskId);
+  t.tags = t.tags ? JSON.parse(t.tags) : [];
+  res.json(t);
 });
 
 app.delete('/api/tasks/:id', authMiddleware, (req, res) => {
-  const idx = db.tasks.findIndex(t => t.id === req.params.id && t.ownerId === req.user.sub);
-  if (idx < 0) return res.status(404).json({ message: 'Task not found' });
-  const [removed] = db.tasks.splice(idx, 1);
-  res.json({ deleted: true, id: removed.id });
+  const r = db.prepare('DELETE FROM tasks WHERE id=? AND ownerId=?').run(String(req.params.id), req.user.sub);
+  if (!r.changes) return res.status(404).json({ message: 'Task not found' });
+  res.json({ deleted: true, id: req.params.id });
 });
 
 app.get('/api/meta/categories', authMiddleware, (req, res) => {
-  const items = db.tasks.filter(t => t.ownerId === req.user.sub);
-  const categories = distinct(items.map(t => t.category).filter(Boolean)).sort();
-  res.json({ categories });
+  const rows = db.prepare('SELECT DISTINCT category FROM tasks WHERE ownerId=? AND category IS NOT NULL ORDER BY category').all(req.user.sub);
+  res.json({ categories: rows.map(r => r.category) });
 });
 
 app.get('/api/meta/tags', authMiddleware, (req, res) => {
-  const items = db.tasks.filter(t => t.ownerId === req.user.sub);
-  const tagSet = new Set();
-  for (const t of items) {
-    if (Array.isArray(t.tags)) for (const tag of t.tags) tagSet.add(tag);
-  }
-  const tags = Array.from(tagSet).sort();
-  res.json({ tags });
+  const rows = db.prepare("SELECT tags FROM tasks WHERE ownerId=? AND tags IS NOT NULL AND tags <> ''").all(req.user.sub);
+  const set = new Set();
+  rows.forEach(r => {
+    try { JSON.parse(r.tags).forEach(t => set.add(t)); } catch {}
+  });
+  res.json({ tags: Array.from(set).sort() });
 });
 
 app.get('/api/stats', authMiddleware, (req, res) => {
-  const items = db.tasks.filter(t => t.ownerId === req.user.sub);
-  const total = items.length;
-  const byStatus = STATUSES.reduce((acc, s) => ((acc[s] = items.filter(t => t.status === s).length), acc), {});
-  const byPriority = PRIORITIES.reduce((acc, p) => ((acc[p] = items.filter(t => t.priority === p).length), acc), {});
-  const categories = {};
-  for (const c of distinct(items.map(t => t.category))) categories[c] = items.filter(t => t.category === c).length;
+  const total = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=?').get(req.user.sub).c;
+  const byStatus = {};
+  ['todo','in-progress','done'].forEach(s => { byStatus[s] = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=? AND status=?').get(req.user.sub, s).c; });
+  const byPriority = {};
+  ['low','medium','high'].forEach(p => { byPriority[p] = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=? AND priority=?').get(req.user.sub, p).c; });
+  const cats = db.prepare('SELECT category, COUNT(*) c FROM tasks WHERE ownerId=? AND category IS NOT NULL GROUP BY category').all(req.user.sub);
+  const byCategory = {};
+  cats.forEach(r => byCategory[r.category] = r.c);
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const endOfDay = startOfDay + 86400000 - 1;
-  const dueToday = items.filter(t => t.dueDate && new Date(t.dueDate).getTime() >= startOfDay && new Date(t.dueDate).getTime() <= endOfDay).length;
-  const upcoming7DaysTo = startOfDay + 7 * 86400000 - 1;
-  const upcoming7Days = items.filter(t => t.dueDate && new Date(t.dueDate).getTime() > endOfDay && new Date(t.dueDate).getTime() <= upcoming7DaysTo).length;
-  const overdue = items.filter(t => t.dueDate && new Date(t.dueDate).getTime() < startOfDay && t.status !== 'done').length;
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const endOfDay = new Date(new Date(startOfDay).getTime() + 86400000 - 1).toISOString();
+  const sevenEnd = new Date(new Date(startOfDay).getTime() + 7 * 86400000 - 1).toISOString();
+  const dueToday = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=? AND dueDate IS NOT NULL AND dueDate >= ? AND dueDate <= ?').get(req.user.sub, startOfDay, endOfDay).c;
+  const upcoming7Days = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=? AND dueDate IS NOT NULL AND dueDate > ? AND dueDate <= ?').get(req.user.sub, endOfDay, sevenEnd).c;
+  const overdue = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=? AND dueDate IS NOT NULL AND dueDate < ? AND status <> ?').get(req.user.sub, startOfDay, 'done').c;
   const completed = byStatus['done'] || 0;
   const completionRate = total ? Math.round((completed / total) * 100) : 0;
   const tagCounts = {};
-  for (const t of items) {
-    if (Array.isArray(t.tags)) for (const tag of t.tags) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-  }
+  db.prepare("SELECT tags FROM tasks WHERE ownerId=? AND tags IS NOT NULL AND tags <> ''").all(req.user.sub).forEach(r => {
+    try { JSON.parse(r.tags).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1); } catch {}
+  });
   const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([tag, count]) => ({ tag, count }));
+  const dateRangeRowMin = db.prepare('SELECT createdAt d FROM tasks WHERE ownerId=? ORDER BY createdAt ASC LIMIT 1').get(req.user.sub);
+  const dateRangeRowMax = db.prepare('SELECT createdAt d FROM tasks WHERE ownerId=? ORDER BY createdAt DESC LIMIT 1').get(req.user.sub);
   res.json({
     total,
     byStatus,
     byPriority,
-    byCategory: categories,
+    byCategory,
     overdue,
     dueToday,
     upcoming7Days,
     completionRate,
     topTags,
-    dateRange: {
-      minCreatedAt: items.length ? items.reduce((a, t) => (a < t.createdAt ? a : t.createdAt), items[0].createdAt) : null,
-      maxCreatedAt: items.length ? items.reduce((a, t) => (a > t.createdAt ? a : t.createdAt), items[0].createdAt) : null
-    }
+    dateRange: { minCreatedAt: dateRangeRowMin ? dateRangeRowMin.d : null, maxCreatedAt: dateRangeRowMax ? dateRangeRowMax.d : null }
   });
 });
 
+
 app.post('/api/admin/seed', authMiddleware, (req, res) => {
   const n = parseInt(req.query.n, 10) || 400;
-  db.tasks = db.tasks.filter(t => t.ownerId !== req.user.sub).concat(seedTasks(n, req.user.sub));
+  db.prepare('DELETE FROM tasks WHERE ownerId=?').run(req.user.sub);
+  seedTasks(n, req.user.sub);
   res.json({ seeded: n });
+});
+
+app.post('/api/public/seed-by-email', (req, res) => {
+  const { email, n } = req.body || {};
+  if (!email) return res.status(400).json({ message: 'email required' });
+  const u = userByEmail(email);
+  if (!u) return res.status(404).json({ message: 'User not found' });
+  const count = parseInt(n, 10) || 400;
+  const before = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=?').get(u.id).c;
+  db.prepare('DELETE FROM tasks WHERE ownerId=?').run(u.id);
+  seedTasks(count, u.id);
+  const after = db.prepare('SELECT COUNT(*) c FROM tasks WHERE ownerId=?').get(u.id).c;
+  res.json({ seeded: count, userId: u.id, email: u.email, before, after });
 });
 
 app.listen(PORT, () => {

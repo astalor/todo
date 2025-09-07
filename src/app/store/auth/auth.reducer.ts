@@ -9,12 +9,14 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
+const storedToken = typeof localStorage !== 'undefined' ? localStorage.getItem('tm_token') : null;
+
 const initialState: AuthState = {
   user: null,
-  token: typeof localStorage !== 'undefined' ? localStorage.getItem('tm_token') : null,
+  token: storedToken,
   loading: false,
   error: null,
-  isAuthenticated: !!(typeof localStorage !== 'undefined' && localStorage.getItem('tm_token'))
+  isAuthenticated: !!storedToken
 };
 
 export const authReducer = createReducer(

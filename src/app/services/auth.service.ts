@@ -10,7 +10,6 @@ export class AuthService {
     return this.http.post<any>('/api/auth/login', { email, password }).pipe(
       tap(res => {
         localStorage.setItem('tm_token', res.token);
-        localStorage.setItem('tm_user', JSON.stringify(res.user));
       })
     );
   }
@@ -19,7 +18,6 @@ export class AuthService {
     return this.http.post<any>('/api/auth/register', { name, email, password }).pipe(
       tap(res => {
         localStorage.setItem('tm_token', res.token);
-        localStorage.setItem('tm_user', JSON.stringify(res.user));
       })
     );
   }
@@ -30,11 +28,5 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('tm_token');
-    localStorage.removeItem('tm_user');
-  }
-
-  user() {
-    const u = localStorage.getItem('tm_user');
-    return u ? JSON.parse(u) : null;
   }
 }

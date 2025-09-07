@@ -3,7 +3,7 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AuthActions } from './auth.actions';
-import { catchError, map, mergeMap, of, tap } from 'rxjs';
+import { catchError, map, mergeMap, of, switchMap, tap } from 'rxjs';
 
 @Injectable()
 export class AuthEffects {
@@ -48,7 +48,7 @@ export class AuthEffects {
   loadMe$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.loadMe),
-      mergeMap(() =>
+      switchMap(() =>
         this.auth.me().pipe(
           map(user => AuthActions.loadMeSuccess({ user })),
           catchError(err => of(AuthActions.loadMeFailure({ error: err?.error?.message || 'Load me failed' })))
@@ -57,10 +57,21 @@ export class AuthEffects {
     )
   );
 
+  loadMeFailure$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.loadMeFailure),
+      tap(() => {
+        localStorage.removeItem('tm_token');
+      }),
+      map(() => AuthActions.logout())
+    )
+  );
+
   logout$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.logout),
       tap(() => {
+        localStorage.removeItem('tm_token');
         this.auth.logout();
         this.router.navigateByUrl('/login');
       })
