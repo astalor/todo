@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { TasksActions } from '../../store/tasks/tasks.actions';
-import { selectAllTasks, selectTasksLoading, selectTasksPage, selectTasksPageSize, selectTasksTotal, selectTasksLastQuery, selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.selectors';
+import { selectAllTasks, selectTasksLoading, selectTasksPage, selectTasksPageSize, selectTasksTotal, selectTaskCategories, selectTaskTags } from '../../store/tasks/tasks.selectors';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
@@ -71,35 +71,44 @@ import { Subscription } from 'rxjs';
           </mat-select>
         </mat-form-field>
 
+        <mat-form-field appearance="outline">
+          <mat-label>Tags</mat-label>
+          <mat-select formControlName="tags" multiple>
+            <mat-option *ngFor="let t of tags$ | async" [value]="t">{{ t }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
         <mat-form-field appearance="outline" class="search-ff">
           <mat-label>Search</mat-label>
           <input matInput formControlName="q">
         </mat-form-field>
 
-        <div class="range">
-          <mat-form-field appearance="outline">
-            <mat-label>From date</mat-label>
-            <input matInput [matDatepicker]="fromPicker" formControlName="dueFromDate">
-            <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
-            <mat-datepicker #fromPicker></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="time-ff">
-            <mat-label>Time</mat-label>
-            <input matInput type="time" formControlName="dueFromTime">
-          </mat-form-field>
-        </div>
+        <div class="range-row">
+          <div class="range">
+            <mat-form-field appearance="outline">
+              <mat-label>From date</mat-label>
+              <input matInput [matDatepicker]="fromPicker" formControlName="dueFromDate">
+              <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+              <mat-datepicker #fromPicker></mat-datepicker>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="time-ff">
+              <mat-label>Time</mat-label>
+              <input matInput type="time" formControlName="dueFromTime">
+            </mat-form-field>
+          </div>
 
-        <div class="range">
-          <mat-form-field appearance="outline">
-            <mat-label>To date</mat-label>
-            <input matInput [matDatepicker]="toPicker" formControlName="dueToDate">
-            <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
-            <mat-datepicker #toPicker></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="time-ff">
-            <mat-label>Time</mat-label>
-            <input matInput type="time" formControlName="dueToTime">
-          </mat-form-field>
+          <div class="range">
+            <mat-form-field appearance="outline">
+              <mat-label>To date</mat-label>
+              <input matInput [matDatepicker]="toPicker" formControlName="dueToDate">
+              <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+              <mat-datepicker #toPicker></mat-datepicker>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="time-ff">
+              <mat-label>Time</mat-label>
+              <input matInput type="time" formControlName="dueToTime">
+            </mat-form-field>
+          </div>
         </div>
 
         <button mat-raised-button color="primary">Apply</button>
@@ -127,6 +136,19 @@ import { Subscription } from 'rxjs';
           <div class="desc" *ngIf="t.description">{{ t.description }}</div>
 
           <div class="grid">
+            <div class="due-wrap">
+              <mat-form-field appearance="outline" class="due-date">
+                <mat-label>Due date</mat-label>
+                <input matInput [matDatepicker]="picker" [value]="toDateObj(t.dueDate)" (dateChange)="onDueDateChange(t, $event)">
+                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="due-time">
+                <mat-label>Time</mat-label>
+                <input matInput type="time" [value]="toTime(t.dueDate)" (change)="onDueTimeChange(t, $event)">
+              </mat-form-field>
+            </div>
+
             <mat-form-field appearance="outline">
               <mat-label>Status</mat-label>
               <mat-select [value]="t.status" (valueChange)="update(t, { status: $event })">
@@ -142,19 +164,6 @@ import { Subscription } from 'rxjs';
                 <mat-option *ngFor="let c of categories$ | async" [value]="c">{{ c }}</mat-option>
               </mat-select>
             </mat-form-field>
-
-            <div class="due-wrap">
-              <mat-form-field appearance="outline" class="due-date">
-                <mat-label>Due date</mat-label>
-                <input matInput [matDatepicker]="picker" [value]="toDateObj(t.dueDate)" (dateChange)="onDueDateChange(t, $event)">
-                <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                <mat-datepicker #picker></mat-datepicker>
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="due-time">
-                <mat-label>Time</mat-label>
-                <input matInput type="time" [value]="toTime(t.dueDate)" (change)="onDueTimeChange(t, $event)">
-              </mat-form-field>
-            </div>
 
             <mat-form-field appearance="outline">
               <mat-label>Tags</mat-label>
@@ -182,10 +191,11 @@ import { Subscription } from 'rxjs';
     .wrap { max-width: 1200px; margin: 16px auto; padding: 0 16px; display: grid; gap: 14px; }
     .filters-header { display: flex; align-items: center; gap: 10px; }
     .filters-toggle { display: inline-flex; align-items: center; gap: 6px; }
-    .filters { display: grid; grid-template-columns: 180px 160px 240px minmax(420px,1fr) repeat(2, minmax(240px, 1fr)) auto auto; gap: 10px; align-items: end; }
+    .filters { display: grid; grid-template-columns: 180px 160px 240px 240px minmax(320px,1fr) auto auto; gap: 10px; align-items: end; }
     .filters-collapsible.collapsed { display: none; }
-    .range { display: grid; grid-template-columns: 1fr 150px; gap: 10px; align-items: center; }
-    .time-ff { min-width: 130px; }
+    .range-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 10px; }
+    .range { display: grid; grid-template-columns: 1fr 140px; gap: 10px; align-items: center; }
+    .time-ff { min-width: 120px; }
     .search-ff { width: 100%; }
     .spacer { flex: 1; }
     .toolbar { display: flex; align-items: center; gap: 8px; }
@@ -203,10 +213,10 @@ import { Subscription } from 'rxjs';
     .pill.s-todo { background: #e3f2fd; }
     .pill.s-in-progress { background: #ede7f6; }
     .pill.s-done { background: #e8eaf6; }
-    .pill.due { background: #e0f2f1; }
+    .pill.due { background: #e0f2f1; font-size: 11px; padding: 1px 6px; }
     .desc { color: #555; font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .grid { display: grid; grid-template-columns: 220px 260px 1fr 260px; gap: 10px; align-items: start; }
-    .due-wrap { display: grid; grid-template-columns: 1fr 150px; gap: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 220px 260px 260px; gap: 10px; align-items: start; }
+    .due-wrap { display: grid; grid-template-columns: 1fr 140px; gap: 10px; }
     .foot { display: flex; justify-content: space-between; align-items: center; }
     .cats { display: flex; gap: 6px; flex-wrap: wrap; }
     .chip { background: #f7f7f7; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
@@ -215,6 +225,7 @@ import { Subscription } from 'rxjs';
     @media (min-width: 960px) { .filters-collapsible { display: grid !important; } .filters-toggle { display: none; } }
     @media (max-width: 960px) {
       .filters { grid-template-columns: 1fr 1fr; }
+      .range-row { grid-template-columns: 1fr; }
       .grid { grid-template-columns: 1fr; }
       .card-head { flex-direction: column; align-items: stretch; }
       .badges { margin-top: 4px; }
@@ -234,7 +245,6 @@ export class TaskListComponent implements OnInit, OnDestroy {
   page$ = this.store.select(selectTasksPage);
   pageSize$ = this.store.select(selectTasksPageSize);
   total$ = this.store.select(selectTasksTotal);
-  lastQuery$ = this.store.select(selectTasksLastQuery);
   categories$ = this.store.select(selectTaskCategories);
   tags$ = this.store.select(selectTaskTags);
 
@@ -248,6 +258,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     status: [''],
     priority: [''],
     categories: [[] as string[]],
+    tags: [[] as string[]],
     q: [''],
     dueFromDate: [null as Date | null],
     dueFromTime: [''],
@@ -259,6 +270,8 @@ export class TaskListComponent implements OnInit, OnDestroy {
     this.sub = this.route.queryParams.subscribe(p => {
       const catsCsv = p['category'] || '';
       const catsArr = catsCsv ? String(catsCsv).split(',').map((x: string) => x.trim()).filter(Boolean) : [];
+      const tagsCsv = p['tags'] || '';
+      const tagsArr = tagsCsv ? String(tagsCsv).split(',').map((x: string) => x.trim()).filter(Boolean) : [];
       const dueFromIso = p['dueFrom'] || '';
       const dueToIso = p['dueTo'] || '';
       const fromD = dueFromIso ? new Date(String(dueFromIso)) : null;
@@ -267,6 +280,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
         status: p['status'] || '',
         priority: p['priority'] || '',
         categories: catsArr,
+        tags: tagsArr,
         q: p['q'] || '',
         dueFromDate: fromD,
         dueFromTime: fromD ? this.toTime(dueFromIso) : '',
@@ -277,6 +291,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
         status: p['status'] || '',
         priority: p['priority'] || '',
         category: catsArr.join(','),
+        tags: tagsArr.join(','),
         q: p['q'] || '',
         dueFrom: dueFromIso || '',
         dueTo: dueToIso || '',
@@ -304,6 +319,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       status: v.status || '',
       priority: v.priority || '',
       category: (v.categories || []).join(','),
+      tags: (v.tags || []).join(','),
       q: v.q || '',
       dueFrom: this.combine(v.dueFromDate || null, v.dueFromTime || ''),
       dueTo: this.combine(v.dueToDate || null, v.dueToTime || ''),
@@ -315,7 +331,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
   }
 
   reset() {
-    this.form.reset({ status: '', priority: '', categories: [], q: '', dueFromDate: null, dueFromTime: '', dueToDate: null, dueToTime: '' });
+    this.form.reset({ status: '', priority: '', categories: [], tags: [], q: '', dueFromDate: null, dueFromTime: '', dueToDate: null, dueToTime: '' });
     this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, pageSize: this.pageSize() } });
   }
 
